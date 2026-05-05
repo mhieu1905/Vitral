@@ -53,6 +53,10 @@ export default function ProfileScreen({ navigation }: any) {
               key={i}
               style={[styles.settingsItem, i === settings.length - 1 && { borderBottomWidth: 0 }]}
               activeOpacity={0.7}
+              onPress={() => {
+    if (item.label === 'Privacy') { router.push('/(tabs)/wellness/privacy');
+    }
+  }}
             >
               <View style={[styles.settingsIcon, { backgroundColor: item.bg }]}>
                 <Text style={{ fontSize: 16 }}>{item.emoji}</Text>
