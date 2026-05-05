@@ -60,6 +60,8 @@ export default function ProfileScreen({ navigation }: any) {
     router.push('/(tabs)/wellness/settings');
   } else if (item.label === 'Help Data') {
     router.push('/(tabs)/wellness/settings-about');
+  } else if (item.label === 'Goals') {
+    router.push('/(tabs)/wellness/health-goals');
   }
 }}
             >
