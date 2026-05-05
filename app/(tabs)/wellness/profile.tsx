@@ -56,8 +56,12 @@ export default function ProfileScreen({ navigation }: any) {
               onPress={() => {
   if (item.label === 'Privacy') {
     router.push('/(tabs)/wellness/privacy');
-  } else if (item.label === 'Help Data') {
+  } else if (item.label === 'Notification') {
     router.push('/(tabs)/wellness/settings');
+  } else if (item.label === 'Help Data') {
+    router.push('/(tabs)/wellness/settings-about');
+  } else if (item.label === 'Goals') {
+    router.push('/(tabs)/wellness/health-goals');
   }
 }}
             >
