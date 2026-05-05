@@ -1,0 +1,18 @@
+export const colors = {
+  cream:    '#FDF8F3',
+  surface:  '#F5EFE6',
+  surface2: '#EDE7DD',
+  sage:     '#A8C5A0',
+  sageD:    '#6B9E62',
+  sageL:    '#D6E8D2',
+  rose:     '#D4A5A5',
+  blue:     '#B5C8E8',
+  amber:    '#F2D9A0',
+  dark:     '#3D3530',
+  muted:    '#8C7B72',
+  hint:     '#C4B5AC',
+  white:    '#FFFFFF',
+  cardGreen:  '#D6E8D2',
+  cardPink:   '#F4DEDE',
+  cardYellow: '#F7ECC8',
+};
