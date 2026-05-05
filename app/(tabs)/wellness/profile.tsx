@@ -54,9 +54,12 @@ export default function ProfileScreen({ navigation }: any) {
               style={[styles.settingsItem, i === settings.length - 1 && { borderBottomWidth: 0 }]}
               activeOpacity={0.7}
               onPress={() => {
-    if (item.label === 'Privacy') { router.push('/(tabs)/wellness/privacy');
-    }
-  }}
+  if (item.label === 'Privacy') {
+    router.push('/(tabs)/wellness/privacy');
+  } else if (item.label === 'Help Data') {
+    router.push('/(tabs)/wellness/settings');
+  }
+}}
             >
               <View style={[styles.settingsIcon, { backgroundColor: item.bg }]}>
                 <Text style={{ fontSize: 16 }}>{item.emoji}</Text>
