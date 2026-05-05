@@ -60,18 +60,18 @@ export default function WellnessScreen() {
     activeOpacity={0.85}
   >
     <Text style={styles.actionIcon}>📔</Text>
-    <Text style={styles.actionTitle}>Journal</Text>
-    <Text style={styles.actionSub}>Write today</Text>
+    <Text style={styles.actionTitle}>Journal History</Text>
+    <Text style={styles.actionSub}>Read</Text>
   </TouchableOpacity>
 
   <TouchableOpacity
     style={[styles.actionCard, { backgroundColor: colors.sage }]}
-    onPress={() => router.push('/(tabs)/wellness/breathing')}
+    onPress={() => router.push('/(tabs)/wellness/meditation')}
     activeOpacity={0.85}
   >
     <Text style={styles.actionIcon}>🫁</Text>
-    <Text style={styles.actionTitle}>Breathing</Text>
-    <Text style={styles.actionSub}>4-7-8</Text>
+    <Text style={styles.actionTitle}>Meditate Timer</Text>
+    <Text style={styles.actionSub}>24h</Text>
   </TouchableOpacity>
 </View>
 
