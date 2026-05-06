@@ -97,12 +97,12 @@ const router = useRouter(); // ← thêm dòng này
         <View style={styles.grid}>
           <QuickCard
             emoji="🏠"
-            title="Home"
+            title="Stress-check"
             subtitle="Daily Overview"
             bgColor={COLORS.cardGreen}
             textColor="#3B6D11"
             subtitleColor="#639922"
-            onPress={() => router.push('/(tabs)/wellness')}
+            onPress={() => router.push('/(tabs)/wellness/stress')}
           />
           <QuickCard
             emoji="📔"
