@@ -56,7 +56,7 @@ export default function WellnessScreen() {
         <View style={styles.actionRow}>
   <TouchableOpacity
     style={[styles.actionCard, { backgroundColor: colors.rose }]}
-    onPress={() => router.push('/(tabs)/wellness/journal')}
+    onPress={() => router.push('/(tabs)/wellness/history')}
     activeOpacity={0.85}
   >
     <Text style={styles.actionIcon}>📔</Text>
