@@ -32,7 +32,7 @@ export default function BottomNav() {
     <View style={styles.bottomNav}>
       <NavIcon Icon={User} label="Onboarding" />
       <NavIcon Icon={Layout} label="Dashboard" active={isDashboard} onPress={() => router.replace('/dashboard')} />
-      <NavIcon Icon={Activity} label="Activity" active={isActivity} onPress={() => router.replace('/activity')} />
+      <NavIcon Icon={Activity} label="Activity" active={isActivity} onPress={() => router.replace('/(tabs)/activity/home')} />
       <NavIcon Icon={Utensils} label="Nutrition" />
       <NavIcon Icon={Heart} label="Wellness" active={isWellness} onPress={() => router.replace('/(tabs)/wellness/homescreen')} 
 />
