@@ -26,6 +26,7 @@ export default function BottomNav() {
 
   const isDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard');
   const isActivity = pathname === '/activity' || pathname.startsWith('/activity/');
+  const isNutrition = pathname === '/nutrition' || pathname.startsWith('/nutrition/');
   const isWellness = pathname === '/wellness' || pathname.startsWith('/wellness/');
 
   return (
@@ -33,9 +34,9 @@ export default function BottomNav() {
       <NavIcon Icon={User} label="Onboarding" />
       <NavIcon Icon={Layout} label="Dashboard" active={isDashboard} onPress={() => router.replace('/dashboard')} />
       <NavIcon Icon={Activity} label="Activity" active={isActivity} onPress={() => router.replace('/activity')} />
-      <NavIcon Icon={Utensils} label="Nutrition" />
-      <NavIcon Icon={Heart} label="Wellness" active={isWellness} onPress={() => router.replace('/(tabs)/wellness/homescreen')} 
-/>
+      <NavIcon Icon={Utensils} label="Nutrition" active={isNutrition} onPress={() => router.replace('/nutrition')} />
+      <NavIcon Icon={Heart} label="Wellness" active={isWellness} onPress={() => router.replace('/(tabs)/wellness/homescreen')}
+      />
     </View>
   );
 }
