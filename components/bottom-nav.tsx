@@ -17,7 +17,6 @@ const NavIcon = ({ Icon, label, active, onPress }: NavIconProps) => (
     </View>
     <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
   </TouchableOpacity>
-  
 );
 
 export default function BottomNav() {
@@ -32,11 +31,10 @@ export default function BottomNav() {
   return (
     <View style={styles.bottomNav}>
       <NavIcon Icon={User} label="Onboarding" />
-      <NavIcon Icon={Layout} label="Dashboard" active={isDashboard} onPress={() => router.replace('/dashboard')} />
-      <NavIcon Icon={Activity} label="Activity" active={isActivity} onPress={() => router.replace('/activity')} />
-      <NavIcon Icon={Utensils} label="Nutrition" active={isNutrition} onPress={() => router.replace('/nutrition')} />
-      <NavIcon Icon={Heart} label="Wellness" active={isWellness} onPress={() => router.replace('/(tabs)/wellness/homescreen')}
-      />
+      <NavIcon Icon={Layout} label="Dashboard" active={isDashboard} onPress={() => router.replace('/(tabs)/dashboard')} />
+      <NavIcon Icon={Activity} label="Activity" active={isActivity} onPress={() => router.replace('/(tabs)/activity/home')} />
+      <NavIcon Icon={Utensils} label="Nutrition" active={isNutrition} onPress={() => router.replace('/(tabs)/nutrition')} />
+      <NavIcon Icon={Heart} label="Wellness" active={isWellness} onPress={() => router.replace('/(tabs)/wellness/homescreen')} />
     </View>
   );
 }
@@ -49,7 +47,3 @@ const styles = StyleSheet.create({
   navLabel: { fontSize: 10, fontWeight: '500', color: '#88776D' },
   navLabelActive: { color: '#4C6647' },
 });
-
-
-
-
