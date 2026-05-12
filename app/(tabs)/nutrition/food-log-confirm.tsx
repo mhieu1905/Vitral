@@ -1,15 +1,15 @@
-import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from "expo-haptics";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronLeft,
   Flashlight,
   Image as ImageIcon,
   Leaf,
   Pencil,
-} from 'lucide-react-native';
-import type { ComponentType } from 'react';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+} from "lucide-react-native";
+import type { ComponentType } from "react";
+import { useEffect } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -19,34 +19,36 @@ import Animated, {
   useSharedValue,
   withDelay,
   withTiming,
-} from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, {
   Defs,
   Path,
-  RadialGradient as SvgRadialGradient,
   Rect,
   Stop,
-} from 'react-native-svg';
+  RadialGradient as SvgRadialGradient,
+} from "react-native-svg";
 
-import { NutritionAvatar } from '@/components/nutrition';
+import { NutritionAvatar } from "@/components/nutrition";
 import {
   FOOD_LOG_CONFIRM_SCAN,
   type FoodLogConfirmData,
   getFoodLogConfirmFromDetail,
-} from '@/constants/nutrition';
-import { nutritionColors as c, nutritionFonts as f } from '@/theme/nutrition';
+} from "@/constants/nutrition";
+import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const RING = 224;
 const INNER_PAD = 17;
 const CHECK_VIEW = 96;
-const CHECK_PATH = 'M 22 50 L 42 70 L 78 30';
+const CHECK_PATH = "M 22 50 L 42 70 L 78 30";
 const CHECK_PATH_LEN = 80;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 function resolveConfirm(preset: string | undefined): FoodLogConfirmData {
-  return preset === 'detail' ? getFoodLogConfirmFromDetail() : FOOD_LOG_CONFIRM_SCAN;
+  return preset === "detail"
+    ? getFoodLogConfirmFromDetail()
+    : FOOD_LOG_CONFIRM_SCAN;
 }
 
 export default function FoodLogConfirmScreen() {
@@ -69,7 +71,7 @@ export default function FoodLogConfirmScreen() {
   }));
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <SafeAreaView style={s.safe} edges={["top"]}>
       <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <SvgRadialGradient id="sageAura" cx="50%" cy="40%" rx="55%" ry="45%">
@@ -89,8 +91,11 @@ export default function FoodLogConfirmScreen() {
       <View style={s.header}>
         <Pressable
           hitSlop={10}
-          onPress={() => router.replace('/nutrition/food-log')}
-          style={({ pressed }) => [s.headerIconBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => router.replace("/nutrition/food-log")}
+          style={({ pressed }) => [
+            s.headerIconBtn,
+            pressed && { opacity: 0.85 },
+          ]}
         >
           <ChevronLeft size={24} color={c.textDark} strokeWidth={2} />
         </Pressable>
@@ -101,7 +106,12 @@ export default function FoodLogConfirmScreen() {
       <View style={s.main}>
         <Animated.View entering={FadeIn.duration(360)} style={s.heroWrap}>
           <View style={s.leafTR}>
-            <Leaf size={28} color={c.sage} strokeWidth={1.8} style={{ opacity: 0.45 }} />
+            <Leaf
+              size={28}
+              color={c.sage}
+              strokeWidth={1.8}
+              style={{ opacity: 0.45 }}
+            />
           </View>
           <View style={s.leafBL}>
             <Leaf
@@ -134,8 +144,16 @@ export default function FoodLogConfirmScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.duration(440).delay(160)} style={s.msgBlock}>
-          <Text style={s.headline} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+        <Animated.View
+          entering={FadeInUp.duration(440).delay(160)}
+          style={s.msgBlock}
+        >
+          <Text
+            style={s.headline}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
             Logged to your <Text style={s.headlineAccent}>food log</Text>
           </Text>
           <Text style={s.foodName}>{data.foodName}</Text>
@@ -150,21 +168,27 @@ export default function FoodLogConfirmScreen() {
         </Animated.View>
       </View>
 
-      <Animated.View entering={FadeInDown.duration(400).delay(240)} style={s.actions}>
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(240)}
+        style={s.actions}
+      >
         <Pressable
           style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.92 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.replace('/nutrition/food-log');
+            router.replace("/nutrition/food-log");
           }}
         >
           <Text style={s.primaryBtnText}>View Food Log</Text>
         </Pressable>
         <Pressable
-          style={({ pressed }) => [s.secondaryBtn, pressed && { opacity: 0.88 }]}
+          style={({ pressed }) => [
+            s.secondaryBtn,
+            pressed && { opacity: 0.88 },
+          ]}
           onPress={() => {
             Haptics.selectionAsync();
-            router.replace('/nutrition/scan-food');
+            router.replace("/nutrition/scan-food");
           }}
         >
           <Text style={s.secondaryBtnText}>Scan Another</Text>
@@ -179,7 +203,7 @@ export default function FoodLogConfirmScreen() {
             Icon={ImageIcon}
             onPress={() => {
               Haptics.selectionAsync();
-              router.replace('/nutrition/add-food');
+              router.replace("/nutrition/add-food");
             }}
           />
           <FooterTool
@@ -187,7 +211,7 @@ export default function FoodLogConfirmScreen() {
             Icon={Pencil}
             onPress={() => {
               Haptics.selectionAsync();
-              router.replace('/nutrition/add-food');
+              router.replace("/nutrition/add-food");
             }}
           />
           <FooterTool
@@ -225,9 +249,9 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: c.bg },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 32,
     paddingTop: 12,
     paddingBottom: 24,
@@ -236,12 +260,12 @@ const s = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: "rgba(255,255,255,0.6)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    borderColor: "rgba(255,255,255,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
@@ -259,31 +283,31 @@ const s = StyleSheet.create({
   main: {
     flex: 1,
     paddingHorizontal: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: -12,
   },
   heroWrap: {
     width: RING + 56,
     height: RING + 56,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
-  leafTR: { position: 'absolute', top: 16, right: 18 },
-  leafBL: { position: 'absolute', bottom: 22, left: 10 },
+  leafTR: { position: "absolute", top: 16, right: 18 },
+  leafBL: { position: "absolute", bottom: 22, left: 10 },
   /** Glassmorphism ring `rgba(255,255,255,0.4)` border `rgba(255,255,255,0.3)`. */
   ringGlass: {
     width: RING,
     height: RING,
     borderRadius: 999,
     padding: INNER_PAD,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: "rgba(255,255,255,0.4)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 25 },
     shadowRadius: 50,
@@ -292,19 +316,19 @@ const s = StyleSheet.create({
   /** Inner sage-dark disc `#4b6546`. */
   ringInner: {
     flex: 1,
-    width: '100%',
+    width: "100%",
     borderRadius: 999,
     backgroundColor: c.sageDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 10 },
     shadowRadius: 15,
     elevation: 8,
   },
 
-  msgBlock: { alignItems: 'center', gap: 8, maxWidth: 340, marginTop: 12 },
+  msgBlock: { alignItems: "center", gap: 8, maxWidth: 340, marginTop: 12 },
   /** Single-line headline; "food log" rendered inline as italic accent. */
   headline: {
     fontFamily: f.displayBold,
@@ -312,42 +336,42 @@ const s = StyleSheet.create({
     color: c.textDark,
     letterSpacing: -0.7,
     lineHeight: 36,
-    textAlign: 'center',
+    textAlign: "center",
   },
   headlineAccent: {
     fontFamily: f.displayBold,
     color: c.sageDark,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   foodName: {
     marginTop: 4,
     fontFamily: f.displayMed,
     fontSize: 18,
-    color: 'rgba(67,72,64,0.9)',
+    color: "rgba(67,72,64,0.9)",
     letterSpacing: 0.45,
     lineHeight: 28,
-    textAlign: 'center',
+    textAlign: "center",
   },
   macroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: 4,
   },
-  macroItem: { flexDirection: 'row', alignItems: 'center' },
+  macroItem: { flexDirection: "row", alignItems: "center" },
   macroDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#C3C8BE',
+    backgroundColor: "#C3C8BE",
     marginHorizontal: 8,
   },
   /** Stats row — `rgba(67,72,64,0.6)` PJS Light 14px tracking 1.4. */
   macroText: {
     fontFamily: f.display,
     fontSize: 14,
-    color: 'rgba(67,72,64,0.6)',
+    color: "rgba(67,72,64,0.6)",
     letterSpacing: 1.4,
     lineHeight: 20,
   },
@@ -362,9 +386,9 @@ const s = StyleSheet.create({
     backgroundColor: c.sageDark,
     borderRadius: 24,
     paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
@@ -373,18 +397,18 @@ const s = StyleSheet.create({
   primaryBtnText: {
     fontFamily: f.displaySemi,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     lineHeight: 24,
   },
   /** Secondary glass btn `rgba(255,255,255,0.4)` border `rgba(255,255,255,0.3)`. */
   secondaryBtn: {
     borderRadius: 24,
     paddingVertical: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.4)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: "rgba(255,255,255,0.3)",
   },
   secondaryBtnText: {
     fontFamily: f.displayMed,
@@ -400,28 +424,28 @@ const s = StyleSheet.create({
   },
   footerBorder: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(195,200,190,0.1)',
+    borderTopColor: "rgba(195,200,190,0.1)",
     marginBottom: 20,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 32,
   },
-  ftCol: { alignItems: 'center', gap: 4, minWidth: 56 },
+  ftCol: { alignItems: "center", gap: 4, minWidth: 56 },
   /** Tool button bg `#f3e5de` (cardPeach). */
   ftIconBg: {
     width: 40,
     height: 40,
     borderRadius: 999,
     backgroundColor: c.cardPeach,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   ftLabel: {
     fontFamily: f.displayMed,
     fontSize: 10,
-    color: 'rgba(67,72,64,0.6)',
+    color: "rgba(67,72,64,0.6)",
     letterSpacing: -0.5,
     lineHeight: 15,
   },

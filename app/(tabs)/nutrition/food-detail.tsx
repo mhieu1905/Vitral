@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { Heart, Minus, Plus } from 'lucide-react-native';
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { Heart, Minus, Plus } from "lucide-react-native";
 import {
   Dimensions,
   Pressable,
@@ -11,14 +11,14 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { MacroBar, NutritionTopBar } from '@/components/nutrition';
-import { AVOCADO_TOAST } from '@/constants/nutrition';
-import { nutritionColors as c, nutritionFonts as f } from '@/theme/nutrition';
+import { MacroBar, NutritionTopBar } from "@/components/nutrition";
+import { AVOCADO_TOAST } from "@/constants/nutrition";
+import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
-const W = Dimensions.get('window').width;
+const W = Dimensions.get("window").width;
 const VITAMIN_WIDTH = (W - 24 * 2 - 25 * 2 - 32) / 2;
 
 export default function FoodDetail() {
@@ -27,10 +27,17 @@ export default function FoodDetail() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.hero}>
           <Image source={food.heroImage} style={s.heroImg} contentFit="cover" />
-          <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)']} style={s.heroGradient} />
+          <LinearGradient
+            colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]}
+            style={s.heroGradient}
+          />
           <View style={s.heroTextWrap}>
             <Text style={s.heroTitle}>{food.title}</Text>
             <Text style={s.heroSubtitle}>{food.subtitle}</Text>
@@ -97,13 +104,24 @@ export default function FoodDetail() {
                 key={`g${gi}`}
                 style={[
                   s.factGroup,
-                  isLast && { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 },
+                  isLast && {
+                    borderBottomWidth: 0,
+                    paddingBottom: 0,
+                    marginBottom: 0,
+                  },
                 ]}
               >
                 {group.rows.map((row, ri) => (
-                  <View key={`g${gi}r${ri}`} style={row.sub ? s.factSubRow : s.factMainRow}>
-                    <Text style={row.sub ? s.factSubLabel : s.factMainLabel}>{row.label}</Text>
-                    <Text style={row.sub ? s.factSubValue : s.factMainValue}>{row.value}</Text>
+                  <View
+                    key={`g${gi}r${ri}`}
+                    style={row.sub ? s.factSubRow : s.factMainRow}
+                  >
+                    <Text style={row.sub ? s.factSubLabel : s.factMainLabel}>
+                      {row.label}
+                    </Text>
+                    <Text style={row.sub ? s.factSubValue : s.factMainValue}>
+                      {row.value}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -126,7 +144,7 @@ export default function FoodDetail() {
         titleAlign="center"
         height={64}
         backgroundColor="rgba(253,248,243,0.8)"
-        onBack={() => router.replace('/nutrition/food-log')}
+        onBack={() => router.replace("/nutrition/food-log")}
         rightSlot={
           <Pressable hitSlop={10}>
             <Heart size={19} color={c.sageDark} strokeWidth={2} />
@@ -135,7 +153,7 @@ export default function FoodDetail() {
       />
 
       <LinearGradient
-        colors={['rgba(255,248,245,0)', c.bg, c.bg]}
+        colors={["rgba(255,248,245,0)", c.bg, c.bg]}
         locations={[0, 0.5, 1]}
         style={s.bottomBar}
       >
@@ -144,7 +162,10 @@ export default function FoodDetail() {
           style={s.addBtn}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.replace({ pathname: '/nutrition/food-log-confirm', params: { preset: 'detail' } });
+            router.replace({
+              pathname: "/nutrition/food-log-confirm",
+              params: { preset: "detail" },
+            });
           }}
         >
           <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
@@ -166,25 +187,37 @@ const s = StyleSheet.create({
     marginBottom: 16,
     height: 365,
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: c.cardCream,
   },
-  heroImg: { width: '100%', height: '100%' },
-  heroGradient: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
-  heroTextWrap: { position: 'absolute', left: 24, bottom: 24, right: 24 },
-  heroTitle: { fontFamily: f.displayBold, fontSize: 24, color: '#FFFFFF', lineHeight: 32 },
-  heroSubtitle: { fontFamily: f.display, fontSize: 14, color: '#FFFFFF', opacity: 0.9, marginTop: 8, lineHeight: 20 },
+  heroImg: { width: "100%", height: "100%" },
+  heroGradient: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
+  heroTextWrap: { position: "absolute", left: 24, bottom: 24, right: 24 },
+  heroTitle: {
+    fontFamily: f.displayBold,
+    fontSize: 24,
+    color: "#FFFFFF",
+    lineHeight: 32,
+  },
+  heroSubtitle: {
+    fontFamily: f.display,
+    fontSize: 14,
+    color: "#FFFFFF",
+    opacity: 0.9,
+    marginTop: 8,
+    lineHeight: 20,
+  },
 
   calorieCard: {
     marginHorizontal: 24,
     backgroundColor: c.card,
     borderRadius: 24,
     padding: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: 'rgba(195,200,190,0.1)',
-    shadowColor: '#3D3530',
+    borderColor: "rgba(195,200,190,0.1)",
+    shadowColor: "#3D3530",
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 16,
@@ -197,9 +230,20 @@ const s = StyleSheet.create({
     letterSpacing: 1.2,
     marginBottom: 8,
   },
-  calorieRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
-  calorieValue: { fontFamily: f.displayBold, fontSize: 48, color: c.sageDark, lineHeight: 48 },
-  calorieUnit: { fontFamily: f.displayMed, fontSize: 18, color: c.sage, lineHeight: 28, marginBottom: 4 },
+  calorieRow: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
+  calorieValue: {
+    fontFamily: f.displayBold,
+    fontSize: 48,
+    color: c.sageDark,
+    lineHeight: 48,
+  },
+  calorieUnit: {
+    fontFamily: f.displayMed,
+    fontSize: 18,
+    color: c.sage,
+    lineHeight: 28,
+    marginBottom: 4,
+  },
 
   macroCard: {
     marginTop: 16,
@@ -208,9 +252,24 @@ const s = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
   },
-  macroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 },
-  macroHeaderTitle: { fontFamily: f.displaySemi, fontSize: 14, color: c.textDark, lineHeight: 20 },
-  macroHeaderSub: { fontFamily: f.display, fontSize: 11, color: c.textMuted2, lineHeight: 16.5 },
+  macroHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 16,
+  },
+  macroHeaderTitle: {
+    fontFamily: f.displaySemi,
+    fontSize: 14,
+    color: c.textDark,
+    lineHeight: 20,
+  },
+  macroHeaderSub: {
+    fontFamily: f.display,
+    fontSize: 11,
+    color: c.textMuted2,
+    lineHeight: 16.5,
+  },
 
   servingCard: {
     marginTop: 32,
@@ -218,20 +277,31 @@ const s = StyleSheet.create({
     backgroundColor: c.cardPeach,
     borderRadius: 24,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  servingLabel: { fontFamily: f.displayMed, fontSize: 11, color: c.textMuted2, letterSpacing: 0.55, lineHeight: 16.5 },
-  servingValue: { fontFamily: f.displaySemi, fontSize: 16, color: c.textDark, lineHeight: 24 },
+  servingLabel: {
+    fontFamily: f.displayMed,
+    fontSize: 11,
+    color: c.textMuted2,
+    letterSpacing: 0.55,
+    lineHeight: 16.5,
+  },
+  servingValue: {
+    fontFamily: f.displaySemi,
+    fontSize: 16,
+    color: c.textDark,
+    lineHeight: 24,
+  },
   stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: c.card,
     borderRadius: 999,
     padding: 7,
     borderWidth: 1,
-    borderColor: 'rgba(195,200,190,0.2)',
+    borderColor: "rgba(195,200,190,0.2)",
     gap: 16,
   },
   stepperBtnMinus: {
@@ -239,16 +309,16 @@ const s = StyleSheet.create({
     height: 32,
     borderRadius: 999,
     backgroundColor: c.cardCream,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepperBtnPlus: {
     width: 32,
     height: 32,
     borderRadius: 999,
     backgroundColor: c.sageDark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepperCount: {
     fontFamily: f.displayBold,
@@ -256,12 +326,28 @@ const s = StyleSheet.create({
     color: c.textDark,
     lineHeight: 20,
     minWidth: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
-  factsTitleRow: { marginTop: 24, marginHorizontal: 24, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  factsBar: { width: 32, height: 4, borderRadius: 999, backgroundColor: c.sageDark },
-  factsTitle: { fontFamily: f.displayBold, fontSize: 18, color: c.textDark, lineHeight: 28 },
+  factsTitleRow: {
+    marginTop: 24,
+    marginHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  factsBar: {
+    width: 32,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: c.sageDark,
+  },
+  factsTitle: {
+    fontFamily: f.displayBold,
+    fontSize: 18,
+    color: c.textDark,
+    lineHeight: 28,
+  },
 
   factsCard: {
     marginTop: 24,
@@ -270,8 +356,8 @@ const s = StyleSheet.create({
     borderRadius: 24,
     padding: 25,
     borderWidth: 1,
-    borderColor: 'rgba(195,200,190,0.1)',
-    shadowColor: '#3D3530',
+    borderColor: "rgba(195,200,190,0.1)",
+    shadowColor: "#3D3530",
     shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 16,
@@ -284,53 +370,83 @@ const s = StyleSheet.create({
     borderBottomColor: c.borderSoft,
   },
   factMainRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 8,
   },
-  factMainLabel: { fontFamily: f.displaySemi, fontSize: 14, color: c.textDark, lineHeight: 20 },
-  factMainValue: { fontFamily: f.displayBold, fontSize: 14, color: c.textDark, lineHeight: 20 },
+  factMainLabel: {
+    fontFamily: f.displaySemi,
+    fontSize: 14,
+    color: c.textDark,
+    lineHeight: 20,
+  },
+  factMainValue: {
+    fontFamily: f.displayBold,
+    fontSize: 14,
+    color: c.textDark,
+    lineHeight: 20,
+  },
   factSubRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 8,
     paddingLeft: 16,
   },
-  factSubLabel: { fontFamily: f.display, fontSize: 12, color: c.textMuted2, lineHeight: 16 },
-  factSubValue: { fontFamily: f.display, fontSize: 12, color: c.textMuted2, lineHeight: 16 },
+  factSubLabel: {
+    fontFamily: f.display,
+    fontSize: 12,
+    color: c.textMuted2,
+    lineHeight: 16,
+  },
+  factSubValue: {
+    fontFamily: f.display,
+    fontSize: 12,
+    color: c.textMuted2,
+    lineHeight: 16,
+  },
 
   vitaminsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingTop: 8,
     gap: 16,
   },
   vitaminItem: {
     width: VITAMIN_WIDTH,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  vitaminLabel: { fontFamily: f.display, fontSize: 12, color: c.textMuted2, lineHeight: 16 },
-  vitaminValue: { fontFamily: f.displayMed, fontSize: 12, color: c.sageDark, lineHeight: 16 },
+  vitaminLabel: {
+    fontFamily: f.display,
+    fontSize: 12,
+    color: c.textMuted2,
+    lineHeight: 16,
+  },
+  vitaminValue: {
+    fontFamily: f.displayMed,
+    fontSize: 12,
+    color: c.sageDark,
+    lineHeight: 16,
+  },
 
   bottomBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     height: 104,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 24,
   },
   addBtn: {
     height: 56,
     borderRadius: 999,
     backgroundColor: c.sageDark,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
     shadowColor: c.sageDark,
     shadowOpacity: 0.25,
@@ -338,5 +454,10 @@ const s = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
-  addBtnLabel: { fontFamily: f.displaySemi, fontSize: 16, color: '#FFFFFF', lineHeight: 24 },
+  addBtnLabel: {
+    fontFamily: f.displaySemi,
+    fontSize: 16,
+    color: "#FFFFFF",
+    lineHeight: 24,
+  },
 });

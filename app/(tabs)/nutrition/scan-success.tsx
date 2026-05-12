@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -12,15 +12,9 @@ import {
   RotateCw,
   Sparkles,
   Zap,
-} from 'lucide-react-native';
-import { useEffect } from 'react';
-import {
-  Dimensions,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+} from "lucide-react-native";
+import { useEffect } from "react";
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -33,14 +27,14 @@ import Animated, {
   withRepeat,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NutritionAvatar } from '@/components/nutrition';
-import { SCAN_RESULT } from '@/constants/nutrition';
-import { nutritionColors as c, nutritionFonts as f } from '@/theme/nutrition';
+import { NutritionAvatar } from "@/components/nutrition";
+import { SCAN_RESULT } from "@/constants/nutrition";
+import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
-const { width: W, height: H } = Dimensions.get('window');
+const { width: W, height: H } = Dimensions.get("window");
 const CARD_W = W - 48 - 50;
 const FRAME_W = W - 48;
 
@@ -53,7 +47,10 @@ export default function ScanSuccessScreen() {
   const sparkleB = useSharedValue(0);
 
   useEffect(() => {
-    corners.value = withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) });
+    corners.value = withTiming(1, {
+      duration: 360,
+      easing: Easing.out(Easing.cubic),
+    });
     cardScale.value = withSpring(1, { damping: 14, stiffness: 160 });
     sparkleA.value = withRepeat(
       withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) }),
@@ -88,27 +85,44 @@ export default function ScanSuccessScreen() {
 
   return (
     <View style={s.root}>
-      <Image source={SCAN_RESULT.cameraBg} style={s.bg} contentFit="cover" blurRadius={4} />
+      <Image
+        source={SCAN_RESULT.cameraBg}
+        style={s.bg}
+        contentFit="cover"
+        blurRadius={4}
+      />
       <View style={s.bgDim} />
 
       <Animated.View
         style={[s.sparkle, { top: H * 0.22, left: W * 0.18 }, sparkleAStyle]}
       />
       <Animated.View
-        style={[s.sparkle, { width: 8, height: 8, top: H * 0.3, right: W * 0.18 }, sparkleBStyle]}
+        style={[
+          s.sparkle,
+          { width: 8, height: 8, top: H * 0.3, right: W * 0.18 },
+          sparkleBStyle,
+        ]}
       />
       <Animated.View
-        style={[s.sparkle, { width: 6, height: 6, bottom: H * 0.26, left: W * 0.42 }, sparkleAStyle]}
+        style={[
+          s.sparkle,
+          { width: 6, height: 6, bottom: H * 0.26, left: W * 0.42 },
+          sparkleAStyle,
+        ]}
       />
       <Animated.View
-        style={[s.sparkle, { width: 5, height: 5, top: H * 0.5, right: W * 0.32 }, sparkleBStyle]}
+        style={[
+          s.sparkle,
+          { width: 5, height: 5, top: H * 0.5, right: W * 0.32 },
+          sparkleBStyle,
+        ]}
       />
 
       <SafeAreaView style={s.safe}>
         <View style={s.header}>
           <Pressable
             hitSlop={10}
-            onPress={() => router.replace('/nutrition/add-food')}
+            onPress={() => router.replace("/nutrition/add-food")}
             style={s.headerBtn}
           >
             <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
@@ -129,19 +143,38 @@ export default function ScanSuccessScreen() {
 
             <Animated.View style={[s.card, cardStyle]}>
               <View style={s.cardTopRow}>
-                <View style={[s.cardImgBox, { backgroundColor: SCAN_RESULT.imageBg }]}>
-                  <Image source={SCAN_RESULT.image} style={s.cardImg} contentFit="cover" />
+                <View
+                  style={[
+                    s.cardImgBox,
+                    { backgroundColor: SCAN_RESULT.imageBg },
+                  ]}
+                >
+                  <Image
+                    source={SCAN_RESULT.image}
+                    style={s.cardImg}
+                    contentFit="cover"
+                  />
                 </View>
                 <View style={s.cardTextWrap}>
                   <View style={s.titleRow}>
                     <Text style={s.cardTitle}>{SCAN_RESULT.title}</Text>
-                    <CheckCircle2 size={20} color={c.sageDark} strokeWidth={2} fill="rgba(168,197,160,0.25)" />
+                    <CheckCircle2
+                      size={20}
+                      color={c.sageDark}
+                      strokeWidth={2}
+                      fill="rgba(168,197,160,0.25)"
+                    />
                   </View>
                   <Text style={s.cardBrand}>{SCAN_RESULT.brand}</Text>
                   <View style={s.cardTags}>
                     {SCAN_RESULT.tags.map((t) => (
-                      <View key={t.label} style={[s.tag, { backgroundColor: t.bg }]}>
-                        <Text style={[s.tagText, { color: t.color }]}>{t.label}</Text>
+                      <View
+                        key={t.label}
+                        style={[s.tag, { backgroundColor: t.bg }]}
+                      >
+                        <Text style={[s.tagText, { color: t.color }]}>
+                          {t.label}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -165,7 +198,12 @@ export default function ScanSuccessScreen() {
                 entering={FadeIn.duration(420).delay(620)}
                 style={s.successRow}
               >
-                <Sparkles size={13} color={c.sageDark} strokeWidth={2} fill={c.sageDark} />
+                <Sparkles
+                  size={13}
+                  color={c.sageDark}
+                  strokeWidth={2}
+                  fill={c.sageDark}
+                />
                 <Text style={s.successText}>Scanned successfully</Text>
               </Animated.View>
             </Animated.View>
@@ -176,12 +214,17 @@ export default function ScanSuccessScreen() {
               hitSlop={12}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/nutrition/food-detail');
+                router.push("/nutrition/food-detail");
               }}
-              style={({ pressed }) => [s.feedbackRow, pressed && { opacity: 0.75 }]}
+              style={({ pressed }) => [
+                s.feedbackRow,
+                pressed && { opacity: 0.75 },
+              ]}
             >
               <Info size={13} color="rgba(255,255,255,0.9)" strokeWidth={2} />
-              <Text style={s.feedbackText}>Tap to see full nutrition profile</Text>
+              <Text style={s.feedbackText}>
+                Tap to see full nutrition profile
+              </Text>
             </Pressable>
           </Animated.View>
         </View>
@@ -194,7 +237,10 @@ export default function ScanSuccessScreen() {
             style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.9 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.replace({ pathname: '/nutrition/food-log-confirm', params: { preset: 'scan' } });
+              router.replace({
+                pathname: "/nutrition/food-log-confirm",
+                params: { preset: "scan" },
+              });
             }}
           >
             <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
@@ -206,7 +252,7 @@ export default function ScanSuccessScreen() {
               style={({ pressed }) => [s.glassBtn, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/nutrition/food-detail');
+                router.push("/nutrition/food-detail");
               }}
             >
               <FileText size={16} color="#FFFFFF" strokeWidth={2} />
@@ -216,7 +262,7 @@ export default function ScanSuccessScreen() {
               style={({ pressed }) => [s.glassBtn, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.replace('/nutrition/scan-food');
+                router.replace("/nutrition/scan-food");
               }}
             >
               <RotateCw size={16} color="#FFFFFF" strokeWidth={2} />
@@ -230,16 +276,24 @@ export default function ScanSuccessScreen() {
         entering={ZoomIn.duration(360).delay(120)}
         style={s.sideControls}
       >
-        <Pressable hitSlop={6} style={s.sideBtn} onPress={() => Haptics.selectionAsync()}>
+        <Pressable
+          hitSlop={6}
+          style={s.sideBtn}
+          onPress={() => Haptics.selectionAsync()}
+        >
           <Zap size={20} color="#FFFFFF" strokeWidth={2} />
         </Pressable>
-        <Pressable hitSlop={6} style={s.sideBtn} onPress={() => Haptics.selectionAsync()}>
+        <Pressable
+          hitSlop={6}
+          style={s.sideBtn}
+          onPress={() => Haptics.selectionAsync()}
+        >
           <ImageIcon size={20} color="#FFFFFF" strokeWidth={2} />
         </Pressable>
       </Animated.View>
 
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']}
+        colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.35)"]}
         pointerEvents="none"
         style={s.bottomVignette}
       />
@@ -248,54 +302,57 @@ export default function ScanSuccessScreen() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0F0F0F' },
+  root: { flex: 1, backgroundColor: "#0F0F0F" },
   bg: { ...StyleSheet.absoluteFillObject },
-  bgDim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  bgDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
   bottomVignette: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     height: 220,
   },
-  safe: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
+  safe: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between" },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 4,
   },
   headerBtn: {
     width: 40,
     height: 40,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: f.displaySemi,
     fontSize: 22,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     letterSpacing: -0.55,
-    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, alignItems: "center", justifyContent: "center" },
   frameWrap: {
     width: FRAME_W,
     aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: c.sage,
     shadowOpacity: 0.4,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 20,
   },
   cornerTL: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     left: -2,
     width: 40,
@@ -306,7 +363,7 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 12,
   },
   cornerTR: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     width: 40,
@@ -317,7 +374,7 @@ const s = StyleSheet.create({
     borderTopRightRadius: 12,
   },
   cornerBL: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     left: -2,
     width: 40,
@@ -328,7 +385,7 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: 12,
   },
   cornerBR: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     width: 40,
@@ -343,28 +400,33 @@ const s = StyleSheet.create({
     width: CARD_W,
     padding: 22,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: "rgba(255,255,255,0.4)",
     gap: 18,
-    shadowColor: '#3D3530',
+    shadowColor: "#3D3530",
     shadowOpacity: 0.18,
     shadowOffset: { width: 0, height: 24 },
     shadowRadius: 40,
     elevation: 10,
   },
-  cardTopRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  cardTopRow: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
   cardImgBox: {
     width: 76,
     height: 76,
     borderRadius: 14,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardImg: { width: '100%', height: '100%' },
+  cardImg: { width: "100%", height: "100%" },
   cardTextWrap: { flex: 1, gap: 4 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
   cardTitle: {
     flex: 1,
     fontFamily: f.displayBold,
@@ -378,7 +440,7 @@ const s = StyleSheet.create({
     color: c.textDim,
     lineHeight: 19,
   },
-  cardTags: { flexDirection: 'row', gap: 6, paddingTop: 4 },
+  cardTags: { flexDirection: "row", gap: 6, paddingTop: 4 },
   tag: {
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -389,24 +451,24 @@ const s = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 0.3,
     lineHeight: 13,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   nutritionGrid: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,248,245,0.55)',
+    flexDirection: "row",
+    backgroundColor: "rgba(255,248,245,0.55)",
     borderRadius: 12,
   },
   gridCell: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     gap: 4,
   },
   gridCellBorder: {
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.7)',
+    borderLeftColor: "rgba(255,255,255,0.7)",
   },
   gridValue: {
     fontFamily: f.displayBold,
@@ -422,9 +484,9 @@ const s = StyleSheet.create({
   },
 
   successRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
   },
   successText: {
@@ -436,30 +498,30 @@ const s = StyleSheet.create({
 
   feedbackRow: {
     marginTop: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   feedbackText: {
     fontFamily: f.bodyMed,
     fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
+    color: "rgba(255,255,255,0.9)",
     letterSpacing: 0.35,
-    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
 
   actions: { gap: 12, paddingBottom: 8 },
   primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingVertical: 16,
     borderRadius: 999,
     backgroundColor: c.sageDark,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 18,
@@ -468,30 +530,30 @@ const s = StyleSheet.create({
   primaryBtnText: {
     fontFamily: f.displaySemi,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     lineHeight: 22,
   },
-  secondaryRow: { flexDirection: 'row', gap: 12 },
+  secondaryRow: { flexDirection: "row", gap: 12 },
   glassBtn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: "rgba(255,255,255,0.3)",
   },
   glassText: {
     fontFamily: f.displayMed,
     fontSize: 15,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
 
   sideControls: {
-    position: 'absolute',
+    position: "absolute",
     right: 24,
     bottom: 200,
     gap: 14,
@@ -500,18 +562,18 @@ const s = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sparkle: {
-    position: 'absolute',
+    position: "absolute",
     width: 4,
     height: 4,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
 });

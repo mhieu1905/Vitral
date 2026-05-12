@@ -33,6 +33,39 @@ export const nutritionColors = {
   borderSoft: 'rgba(238,224,216,0.5)',
 };
 
+/**
+ * Water Log — same family as VitalTrack nutrition: warm cream surfaces,
+ * slate blue accents (`blue` / `blueLight`), sage for success, pink for warmth.
+ */
+export const waterColors = {
+  primary: '#4D5F7B',
+  primaryDeep: '#3A4A5F',
+  primaryLight: '#ABBEDE',
+  wave: '#B8C7DC',
+  highlight: '#CDD8E8',
+
+  bg: '#FFF8F5',
+  surface: '#FDF8F3',
+  /** blueBg20-ish */
+  tint: 'rgba(171,190,222,0.2)',
+  tintStrong: 'rgba(171,190,222,0.32)',
+  tintSoft: 'rgba(171,190,222,0.38)',
+  track: 'rgba(171,190,222,0.45)',
+  trackSoft: '#C5CED9',
+  border: '#EEE0D8',
+
+  successFrom: '#4B6546',
+  successTo: '#354435',
+
+  accentWarm: '#7B5455',
+  warmBg: 'rgba(253,203,203,0.22)',
+
+  textStrong: '#211A16',
+  textBody: '#3D3530',
+  textMuted: '#737970',
+  textHint: '#8C7B72',
+} as const;
+
 export const nutritionFonts = {
   displayBold: 'PlusJakartaSans_700Bold',
   displaySemi: 'PlusJakartaSans_600SemiBold',
