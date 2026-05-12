@@ -1,13 +1,8 @@
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import {
-  Flashlight,
-  ImageIcon,
-  Leaf,
-  Pencil,
-} from 'lucide-react-native';
-import { useEffect } from 'react';
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { Flashlight, ImageIcon, Leaf, Pencil } from "lucide-react-native";
+import { useEffect } from "react";
 import {
   Dimensions,
   Pressable,
@@ -15,7 +10,7 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -26,14 +21,14 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-} from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NutritionAvatar, NutritionTopBar } from '@/components/nutrition';
-import { SCAN_HISTORY } from '@/constants/nutrition';
-import { nutritionColors as c, nutritionFonts as f } from '@/theme/nutrition';
+import { NutritionAvatar, NutritionTopBar } from "@/components/nutrition";
+import { SCAN_HISTORY } from "@/constants/nutrition";
+import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
-const W = Dimensions.get('window').width;
+const W = Dimensions.get("window").width;
 const SCANNER_W = W - 48;
 const SCANNER_H = SCANNER_W / 0.9;
 const FRAME_W = SCANNER_W * 0.78;
@@ -77,9 +72,7 @@ export default function ScanFoodScreen() {
 
   const cornerGlowStyle = useAnimatedStyle(() => ({
     opacity: interpolate(cornerPulse.value, [0, 1], [0.5, 1]),
-    transform: [
-      { scale: interpolate(cornerPulse.value, [0, 1], [1, 1.06]) },
-    ],
+    transform: [{ scale: interpolate(cornerPulse.value, [0, 1], [1, 1.06]) }],
   }));
 
   const pillStyle = useAnimatedStyle(() => ({
@@ -98,24 +91,29 @@ export default function ScanFoodScreen() {
     );
     setTimeout(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/nutrition/scan-success');
+      router.push("/nutrition/scan-success");
     }, 700);
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['bottom']}>
+    <SafeAreaView style={s.safe} edges={["bottom"]}>
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInDown.duration(420).delay(60)} style={s.hero}>
+        <Animated.View
+          entering={FadeInDown.duration(420).delay(60)}
+          style={s.hero}
+        >
           <View style={s.pill}>
             <Leaf size={13} color={c.sageDark} strokeWidth={2} />
             <Text style={s.pillText}>Nourishment awareness today</Text>
           </View>
           <Text style={s.h1}>Scan mindfully</Text>
-          <Text style={s.subtitle}>Capture nutrition. Fuel your best self.</Text>
+          <Text style={s.subtitle}>
+            Capture nutrition. Fuel your best self.
+          </Text>
         </Animated.View>
 
         <Animated.View
@@ -124,7 +122,7 @@ export default function ScanFoodScreen() {
         >
           <Pressable onPress={startScan} style={s.viewport}>
             <Image
-              source={require('@/assets/images/nutrition/organic-oat-package.png')}
+              source={require("@/assets/images/nutrition/organic-oat-package.png")}
               style={s.viewportImg}
               contentFit="cover"
             />
@@ -132,19 +130,32 @@ export default function ScanFoodScreen() {
 
             <View style={s.frameWrap} pointerEvents="none">
               <View style={s.frame}>
-                <Animated.View style={[s.corner, s.cornerTL, cornerGlowStyle]} />
-                <Animated.View style={[s.corner, s.cornerTR, cornerGlowStyle]} />
-                <Animated.View style={[s.corner, s.cornerBL, cornerGlowStyle]} />
-                <Animated.View style={[s.corner, s.cornerBR, cornerGlowStyle]} />
+                <Animated.View
+                  style={[s.corner, s.cornerTL, cornerGlowStyle]}
+                />
+                <Animated.View
+                  style={[s.corner, s.cornerTR, cornerGlowStyle]}
+                />
+                <Animated.View
+                  style={[s.corner, s.cornerBL, cornerGlowStyle]}
+                />
+                <Animated.View
+                  style={[s.corner, s.cornerBR, cornerGlowStyle]}
+                />
 
-                <Animated.View style={[s.scanLine, scanLineStyle]} pointerEvents="none">
+                <Animated.View
+                  style={[s.scanLine, scanLineStyle]}
+                  pointerEvents="none"
+                >
                   <View style={s.scanLineFadeL} />
                   <View style={s.scanLineCore} />
                   <View style={s.scanLineFadeR} />
                 </Animated.View>
 
                 <Animated.View style={[s.guidance, pillStyle]}>
-                  <Text style={s.guidanceText}>Center the barcode in the frame</Text>
+                  <Text style={s.guidanceText}>
+                    Center the barcode in the frame
+                  </Text>
                 </Animated.View>
               </View>
             </View>
@@ -186,8 +197,20 @@ export default function ScanFoodScreen() {
               entering={FadeInUp.duration(360).delay(380 + idx * 80)}
               style={s.historyCard}
             >
-              <View style={[s.historyImgBox, { backgroundColor: item.imageBg, padding: item.imagePadding ?? 0 }]}>
-                <Image source={item.image} style={s.historyImg} contentFit="cover" />
+              <View
+                style={[
+                  s.historyImgBox,
+                  {
+                    backgroundColor: item.imageBg,
+                    padding: item.imagePadding ?? 0,
+                  },
+                ]}
+              >
+                <Image
+                  source={item.image}
+                  style={s.historyImg}
+                  contentFit="cover"
+                />
               </View>
               <View style={s.historyTextWrap}>
                 <View style={s.historyTopRow}>
@@ -196,7 +219,9 @@ export default function ScanFoodScreen() {
                 </View>
                 <Text style={s.historyMeta}>{item.meta}</Text>
                 <View style={[s.historyTag, { backgroundColor: item.tagBg }]}>
-                  <Text style={[s.historyTagText, { color: item.tagColor }]}>{item.tag}</Text>
+                  <Text style={[s.historyTagText, { color: item.tagColor }]}>
+                    {item.tag}
+                  </Text>
                 </View>
               </View>
             </Animated.View>
@@ -209,8 +234,13 @@ export default function ScanFoodScreen() {
         titleAlign="center"
         height={64}
         backgroundColor="rgba(253,248,243,0.8)"
-        titleStyle={{ fontSize: 18, lineHeight: 28, letterSpacing: -0.3, color: c.textDark }}
-        onBack={() => router.replace('/nutrition/add-food')}
+        titleStyle={{
+          fontSize: 18,
+          lineHeight: 28,
+          letterSpacing: -0.3,
+          color: c.textDark,
+        }}
+        onBack={() => router.replace("/nutrition/add-food")}
         rightSlot={<NutritionAvatar variant="sage" />}
       />
     </SafeAreaView>
@@ -222,12 +252,18 @@ function ActionButton({
   label,
   onPress,
 }: {
-  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  Icon: React.ComponentType<{
+    size?: number;
+    color?: string;
+    strokeWidth?: number;
+  }>;
   label: string;
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
   return (
     <Pressable
       style={s.actionBtnWrap}
@@ -252,10 +288,10 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingTop: 96, paddingBottom: 64 },
 
-  hero: { paddingHorizontal: 24, alignItems: 'center', gap: 12 },
+  hero: { paddingHorizontal: 24, alignItems: "center", gap: 12 },
   pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 20,
     paddingVertical: 6,
@@ -273,7 +309,7 @@ const s = StyleSheet.create({
     fontFamily: f.displayBold,
     fontSize: 40,
     color: c.textDark,
-    textAlign: 'center',
+    textAlign: "center",
     letterSpacing: -1,
     lineHeight: 50,
   },
@@ -281,7 +317,7 @@ const s = StyleSheet.create({
     fontFamily: f.body,
     fontSize: 17,
     color: c.textDim,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.8,
     lineHeight: 26,
   },
@@ -290,7 +326,7 @@ const s = StyleSheet.create({
     marginTop: 32,
     marginHorizontal: 24,
     borderRadius: 48,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 25 },
     shadowRadius: 50,
@@ -300,22 +336,29 @@ const s = StyleSheet.create({
     width: SCANNER_W,
     height: SCANNER_H,
     borderRadius: 48,
-    overflow: 'hidden',
-    backgroundColor: '#171717',
+    overflow: "hidden",
+    backgroundColor: "#171717",
   },
   viewportImg: { ...StyleSheet.absoluteFillObject, opacity: 0.9 },
-  viewportDim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.18)' },
-  frameWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  viewportDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+  frameWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   frame: {
     width: FRAME_W,
     height: FRAME_H,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: "rgba(255,255,255,0.05)",
   },
 
   corner: {
-    position: 'absolute',
+    position: "absolute",
     width: 40,
     height: 40,
     borderColor: c.sageDark,
@@ -324,39 +367,63 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 8,
   },
-  cornerTL: { top: -4, left: -4, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 12 },
-  cornerTR: { top: -4, right: -4, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 12 },
-  cornerBL: { bottom: -4, left: -4, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 12 },
-  cornerBR: { bottom: -4, right: -4, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 12 },
+  cornerTL: {
+    top: -4,
+    left: -4,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 12,
+  },
+  cornerTR: {
+    top: -4,
+    right: -4,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 12,
+  },
+  cornerBL: {
+    bottom: -4,
+    left: -4,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 12,
+  },
+  cornerBR: {
+    bottom: -4,
+    right: -4,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 12,
+  },
 
   scanLine: {
-    position: 'absolute',
+    position: "absolute",
     top: 16,
     left: 24,
     right: 24,
     height: 2,
-    flexDirection: 'row',
+    flexDirection: "row",
     shadowColor: c.sageDark,
     shadowOpacity: 1,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 16,
   },
-  scanLineFadeL: { flex: 1, backgroundColor: 'rgba(75,101,70,0)' },
+  scanLineFadeL: { flex: 1, backgroundColor: "rgba(75,101,70,0)" },
   scanLineCore: { width: 80, backgroundColor: c.sageDark },
-  scanLineFadeR: { flex: 1, backgroundColor: 'rgba(75,101,70,0)' },
+  scanLineFadeR: { flex: 1, backgroundColor: "rgba(75,101,70,0)" },
 
   guidance: {
-    position: 'absolute',
+    position: "absolute",
     left: 16,
     right: 16,
     bottom: 24,
     paddingHorizontal: 25,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: "rgba(255,255,255,0.7)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
-    alignItems: 'center',
+    borderColor: "rgba(255,255,255,0.45)",
+    alignItems: "center",
   },
   guidanceText: {
     fontFamily: f.bodyMed,
@@ -369,7 +436,7 @@ const s = StyleSheet.create({
   actionsRow: {
     marginTop: 32,
     marginHorizontal: 24,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
   },
   actionBtnWrap: { flex: 1 },
@@ -377,12 +444,12 @@ const s = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 14,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: "rgba(255,255,255,0.85)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
-    alignItems: 'center',
+    borderColor: "rgba(255,255,255,0.6)",
+    alignItems: "center",
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
@@ -393,15 +460,15 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: c.textDark,
     letterSpacing: -0.3,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   historyHeader: {
     marginTop: 56,
     marginHorizontal: 32,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
   },
   historyTitle: {
     fontFamily: f.displayBold,
@@ -410,24 +477,24 @@ const s = StyleSheet.create({
     letterSpacing: -0.7,
     lineHeight: 38,
   },
-  seeAll: { paddingHorizontal: 8, alignItems: 'center' },
+  seeAll: { paddingHorizontal: 8, alignItems: "center" },
   seeAllText: {
     fontFamily: f.bodyBold,
     fontSize: 14,
     color: c.sageDark,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 
   historyList: { marginTop: 32, paddingHorizontal: 24, gap: 24 },
   historyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 20,
     padding: 20,
     borderRadius: 40,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 20,
@@ -437,13 +504,17 @@ const s = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  historyImg: { width: '100%', height: '100%' },
+  historyImg: { width: "100%", height: "100%" },
   historyTextWrap: { flex: 1, gap: 4 },
-  historyTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  historyTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
   historyName: {
     flex: 1,
     fontFamily: f.displayBold,
@@ -465,7 +536,7 @@ const s = StyleSheet.create({
     lineHeight: 19,
   },
   historyTag: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 6,
     paddingHorizontal: 14,
     paddingVertical: 5,
