@@ -21,6 +21,8 @@ import Svg, {
   ClipPath,
   Rect,
 } from 'react-native-svg';
+import { supabase } from '../../utils/supabase';
+import { ActivityIndicator, Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -148,6 +150,7 @@ export default function SignUpScreen({
   const [showConfirm, setShowConfirm] = useState(false);
   const [emailError, setEmailError] = useState(true); // shown by default to match design
   const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Animations
   const formAnim = useRef(new Animated.Value(0)).current;
@@ -188,17 +191,38 @@ export default function SignUpScreen({
     ]).start();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setTouched(true);
     const valid = validateEmail(email);
     setEmailError(!valid);
 
     if (!valid) { shake(); return; }
-    if (password !== confirmPassword || password.length < 6) { shake(); return; }
+    if (password !== confirmPassword || password.length < 6) {
+      Alert.alert('Error', 'Passwords must match and be at least 6 characters.');
+      shake();
+      return; 
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Registration Failed', error.message);
+      shake();
+      return;
+    }
 
     onSignUp?.(email, password);
 
-    router.replace("/(auth)/login");
+    Alert.alert('Success', 'Account created successfully!', [
+      { text: 'OK', onPress: () => router.replace("/(auth)/login") }
+    ]);
   };
 
   const formStyle = {
@@ -216,7 +240,7 @@ export default function SignUpScreen({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: C.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar barStyle="light-content" backgroundColor={C.headerGreen} />
       <ScrollView
@@ -323,9 +347,16 @@ export default function SignUpScreen({
             style={styles.btn}
             onPress={handleSubmit}
             activeOpacity={0.85}
+            disabled={loading}
           >
-            <Text style={styles.btnText}>Sign Up</Text>
-            <Text style={styles.btnArrow}>→</Text>
+            {loading ? (
+              <ActivityIndicator color={C.btnText} />
+            ) : (
+              <>
+                <Text style={styles.btnText}>Sign Up</Text>
+                <Text style={styles.btnArrow}>→</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Sign In */}
@@ -420,6 +451,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    height: "100%",
     fontSize: 15,
     color: C.inputText,
     fontFamily: 'Georgia',
