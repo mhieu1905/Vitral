@@ -262,7 +262,7 @@ export default function WelcomeScreen({
       {/* Header: logo + title + subtitle */}
       <Animated.View style={[styles.header, headerStyle]}>
         <LogoIcon />
-        <Text style={styles.title}>Welcome to MoodMate</Text>
+        <Text style={styles.title}>Welcome to Vital Track</Text>
         <Text style={styles.subtitle}>
           Your mindful mental health application for{'\n'}everyone, anywhere 🌿
         </Text>

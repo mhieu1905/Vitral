@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Switch,
@@ -12,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-const router = useRouter();
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SESSIONS = [
   { id: '1', device: 'iPhone 14 Pro', location: 'London, UK', time: 'Active Now', isCurrent: true },

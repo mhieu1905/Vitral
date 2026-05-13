@@ -1,9 +1,9 @@
 import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../../theme/colors';
-const router = useRouter();
 
 const moods = [
   { emoji: '😊', label: 'Happy' },
@@ -13,6 +13,7 @@ const moods = [
 ];
 
 export default function WellnessScreen() {
+  const router = useRouter();
   const [selectedMood, setSelectedMood] = useState(0);
 
   return (

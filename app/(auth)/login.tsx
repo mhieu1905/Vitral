@@ -169,7 +169,7 @@ const WaveHeader = () => (
 
 // --- Main Screen ---
 export default function LoginScreen() {
-  const [email, setEmail] = useState("hellomoodmate@gmail.com");
+  const [email, setEmail] = useState("hellovitaltrack@gmail.com");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
@@ -196,7 +196,7 @@ export default function LoginScreen() {
           <View style={styles.content}>
             {/* Title */}
             <Text style={styles.title}>Sign In</Text>
-            <Text style={styles.appName}>MoodMate</Text>
+            <Text style={styles.appName}>Vital Track</Text>
 
             {/* Email Field */}
             <View style={styles.fieldGroup}>
@@ -261,7 +261,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.signInButton}
               activeOpacity={0.85}
-              onPress={() => router.push("/(onboarding)/choosegoal")}
+              onPress={() => router.push("/(onboarding)/goal-selection")}
             >
               <Text style={styles.signInText}>Sign In →</Text>
             </TouchableOpacity>
@@ -287,7 +287,7 @@ export default function LoginScreen() {
                 <Text style={styles.footerLink}>Sign Up.</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.forgotWrapper}>
+            <TouchableOpacity style={styles.forgotWrapper} onPress={() => router.push("/(auth)/forgot-password")}>
               <Text style={styles.footerLink}>Forgot Password</Text>
             </TouchableOpacity>
           </View>

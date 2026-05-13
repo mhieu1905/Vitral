@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,11 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../../theme/colors';
-const router = useRouter();
 
 
 export default function EditProfileScreen({ navigation }: any) {
+  const router = useRouter();
   const [name,  setName]  = useState('Nguyen Minh Anh');
   const [email, setEmail] = useState('Minh@email.com');
   const [dob,   setDob]   = useState('Jan 15, 2002');

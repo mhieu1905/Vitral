@@ -1,9 +1,9 @@
 import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../../theme/colors';
-const router = useRouter();
 const settings = [
   { emoji: '⭐', label: 'Notification', bg: 'rgba(181,200,232,0.35)' },
   { emoji: '🎯', label: 'Goals',        bg: 'rgba(212,165,165,0.3)' },
@@ -13,6 +13,7 @@ const settings = [
 ];
 
 export default function ProfileScreen({ navigation }: any) {
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>

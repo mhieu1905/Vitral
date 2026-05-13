@@ -2,15 +2,14 @@ import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-const router = useRouter();
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SECTIONS = [
   {
