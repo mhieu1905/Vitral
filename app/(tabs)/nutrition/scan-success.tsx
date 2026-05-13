@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -31,7 +31,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NutritionAvatar } from "@/components/nutrition";
-import { SCAN_RESULT } from "@/constants/nutrition";
+import { SCAN_RESULT, ScanResultData } from "@/constants/nutrition";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const { width: W, height: H } = Dimensions.get("window");
@@ -40,6 +40,22 @@ const FRAME_W = W - 48;
 
 export default function ScanSuccessScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  let scanData: ScanResultData = SCAN_RESULT;
+  if (params.scannedData) {
+    try {
+      const parsed = JSON.parse(params.scannedData as string);
+      scanData = {
+        ...SCAN_RESULT,
+        ...parsed,
+        image: params.imageUri ? { uri: params.imageUri as string } : SCAN_RESULT.image,
+        cameraBg: params.imageUri ? { uri: params.imageUri as string } : SCAN_RESULT.cameraBg,
+      };
+    } catch (e) {
+      console.error("Failed to parse scanned data", e);
+    }
+  }
 
   const corners = useSharedValue(0);
   const cardScale = useSharedValue(0.88);
@@ -86,7 +102,7 @@ export default function ScanSuccessScreen() {
   return (
     <View style={s.root}>
       <Image
-        source={SCAN_RESULT.cameraBg}
+        source={scanData.cameraBg}
         style={s.bg}
         contentFit="cover"
         blurRadius={4}
@@ -146,18 +162,18 @@ export default function ScanSuccessScreen() {
                 <View
                   style={[
                     s.cardImgBox,
-                    { backgroundColor: SCAN_RESULT.imageBg },
+                    { backgroundColor: scanData.imageBg },
                   ]}
                 >
                   <Image
-                    source={SCAN_RESULT.image}
+                    source={scanData.image}
                     style={s.cardImg}
                     contentFit="cover"
                   />
                 </View>
                 <View style={s.cardTextWrap}>
                   <View style={s.titleRow}>
-                    <Text style={s.cardTitle}>{SCAN_RESULT.title}</Text>
+                    <Text style={s.cardTitle}>{scanData.title}</Text>
                     <CheckCircle2
                       size={20}
                       color={c.sageDark}
@@ -165,24 +181,25 @@ export default function ScanSuccessScreen() {
                       fill="rgba(168,197,160,0.25)"
                     />
                   </View>
-                  <Text style={s.cardBrand}>{SCAN_RESULT.brand}</Text>
-                  <View style={s.cardTags}>
-                    {SCAN_RESULT.tags.map((t) => (
-                      <View
-                        key={t.label}
-                        style={[s.tag, { backgroundColor: t.bg }]}
-                      >
-                        <Text style={[s.tagText, { color: t.color }]}>
-                          {t.label}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+                  <Text style={s.cardBrand}>{scanData.brand}</Text>
                 </View>
               </View>
 
+              <View style={s.cardTags}>
+                {scanData.tags.map((t) => (
+                  <View
+                    key={t.label}
+                    style={[s.tag, { backgroundColor: t.bg }]}
+                  >
+                    <Text style={[s.tagText, { color: t.color }]}>
+                      {t.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
               <View style={s.nutritionGrid}>
-                {SCAN_RESULT.nutrition.map((n, i) => (
+                {scanData.nutrition.map((n, i) => (
                   <Animated.View
                     key={n.unit}
                     entering={FadeInUp.duration(280).delay(380 + i * 60)}
@@ -440,10 +457,17 @@ const s = StyleSheet.create({
     color: c.textDim,
     lineHeight: 19,
   },
-  cardTags: { flexDirection: "row", gap: 6, paddingTop: 4 },
+  cardTags: { 
+    flexDirection: "row", 
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 6, 
+    paddingTop: 6,
+    paddingBottom: 6 
+  },
   tag: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   tagText: {
@@ -463,7 +487,7 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 4,
   },
   gridCellBorder: {
@@ -474,7 +498,7 @@ const s = StyleSheet.create({
     fontFamily: f.displayBold,
     fontSize: 16,
     color: c.sageDark,
-    lineHeight: 18,
+    lineHeight: 22,
   },
   gridUnit: {
     fontFamily: f.displaySemi,

@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Flashlight, ImageIcon, Leaf, Pencil } from "lucide-react-native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   Pressable,
@@ -10,7 +10,11 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
+import { analyzeFoodImage } from '@/utils/gemini';
 import Animated, {
   Easing,
   FadeInDown,
@@ -36,6 +40,7 @@ const FRAME_H = SCANNER_H * 0.65;
 
 export default function ScanFoodScreen() {
   const router = useRouter();
+  const [isScanning, setIsScanning] = useState(false);
 
   const scanLine = useSharedValue(0);
   const cornerPulse = useSharedValue(0);
@@ -83,16 +88,105 @@ export default function ScanFoodScreen() {
     transform: [{ scale: cardPress.value }],
   }));
 
-  const startScan = () => {
+  const startScan = async () => {
+    if (isScanning) return;
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     cardPress.value = withSequence(
       withTiming(0.97, { duration: 120 }),
       withTiming(1, { duration: 180 }),
     );
-    setTimeout(() => {
+    
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Permission Required", "Camera access is needed to scan food.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (result.canceled || !result.assets[0].base64) {
+        return;
+      }
+
+      setIsScanning(true);
+      const imageBase64 = result.assets[0].base64;
+      const imageUri = result.assets[0].uri;
+      
+      const analysisData = await analyzeFoodImage(imageBase64);
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push("/nutrition/scan-success");
-    }, 700);
+      router.push({
+        pathname: "/nutrition/scan-success",
+        params: {
+          scannedData: JSON.stringify(analysisData),
+          imageUri: imageUri
+        }
+      });
+      
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Scan Failed", "Could not analyze the food image.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const importPhoto = async () => {
+    if (isScanning) return;
+    
+    Haptics.selectionAsync();
+    
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Permission Required", "Photo library access is needed to import food images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (result.canceled || !result.assets[0].base64) {
+        return;
+      }
+
+      setIsScanning(true);
+      const imageBase64 = result.assets[0].base64;
+      const imageUri = result.assets[0].uri;
+      
+      const analysisData = await analyzeFoodImage(imageBase64);
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.push({
+        pathname: "/nutrition/scan-success",
+        params: {
+          scannedData: JSON.stringify(analysisData),
+          imageUri: imageUri
+        }
+      });
+      
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Import Failed", "Could not analyze the food image.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleFlashlight = () => {
+    Haptics.selectionAsync();
+    Alert.alert("Flashlight", "You can turn on the flash directly inside the camera screen when taking a photo.");
   };
 
   return (
@@ -153,9 +247,13 @@ export default function ScanFoodScreen() {
                 </Animated.View>
 
                 <Animated.View style={[s.guidance, pillStyle]}>
-                  <Text style={s.guidanceText}>
-                    Center the barcode in the frame
-                  </Text>
+                  {isScanning ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={s.guidanceText}>
+                      Tap here to capture food photo
+                    </Text>
+                  )}
                 </Animated.View>
               </View>
             </View>
@@ -169,7 +267,7 @@ export default function ScanFoodScreen() {
           <ActionButton
             Icon={ImageIcon}
             label="Import Photo"
-            onPress={() => Haptics.selectionAsync()}
+            onPress={importPhoto}
           />
           <ActionButton
             Icon={Pencil}
@@ -178,8 +276,8 @@ export default function ScanFoodScreen() {
           />
           <ActionButton
             Icon={Flashlight}
-            label="Flashlight"
-            onPress={() => Haptics.selectionAsync()}
+            label="Flash Lighting"
+            onPress={handleFlashlight}
           />
         </Animated.View>
 
@@ -286,7 +384,7 @@ function ActionButton({
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: c.bgAlt },
   scroll: { flex: 1 },
-  content: { paddingTop: 96, paddingBottom: 64 },
+  content: { paddingTop: 120, paddingBottom: 64 },
 
   hero: { paddingHorizontal: 24, alignItems: "center", gap: 12 },
   pill: {

@@ -10,10 +10,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, Ellipse, Path, Svg } from "react-native-svg";
+import { supabase } from '../../utils/supabase';
 
 // --- Icon Components ---
 const EmailIcon = () => (
@@ -174,14 +177,35 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Sign In Failed', error.message);
+    } else {
+      router.push("/(onboarding)/goal-selection");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <StatusBar barStyle="light-content" backgroundColor="#8FAE88" />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           style={styles.flex}
@@ -261,9 +285,14 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.signInButton}
               activeOpacity={0.85}
-              onPress={() => router.push("/(onboarding)/goal-selection")}
+              onPress={handleSignIn}
+              disabled={loading}
             >
-              <Text style={styles.signInText}>Sign In →</Text>
+              {loading ? (
+                <ActivityIndicator color={CREAM} />
+              ) : (
+                <Text style={styles.signInText}>Sign In →</Text>
+              )}
             </TouchableOpacity>
 
             {/* Social Login */}
@@ -383,17 +412,14 @@ const styles = StyleSheet.create({
   },
   inputWrapperFocused: {
     borderColor: GREEN,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    backgroundColor: "#FFFFFF",
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
+    height: "100%",
     fontSize: 15,
     color: BROWN,
     paddingVertical: 0,
