@@ -23,7 +23,7 @@ const FONT = {
 };
 
 // ─── Logo: 4-circle clover/flower shape ──────────────────────────────────────
-function MoodMateLogo({ size = 80 }: { size?: number }) {
+function VitalTrackLogo({ size = 80 }: { size?: number }) {
   const r = size * 0.28; // circle radius
   const offset = size * 0.22; // distance from center
 
@@ -150,7 +150,7 @@ export default function SplashScreen() {
             transform: [{ scale: logoScale }],
           }}
         >
-          <MoodMateLogo size={96} />
+          <VitalTrackLogo size={96} />
         </Animated.View>
 
         <Animated.Text
@@ -162,7 +162,7 @@ export default function SplashScreen() {
             },
           ]}
         >
-          MoodMate
+          Vital Track
         </Animated.Text>
       </View>
     </View>

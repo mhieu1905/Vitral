@@ -1,3 +1,4 @@
+import BottomNav from "@/components/bottom-nav";
 import { useRouter } from "expo-router";
 import {
   AreaChart,
@@ -14,7 +15,6 @@ import {
 } from "lucide-react-native";
 import React from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -22,8 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import BottomNav from "@/components/bottom-nav";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const COLORS = {
   background: "#FFFBF8",
