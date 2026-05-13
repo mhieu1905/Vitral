@@ -1,209 +1,513 @@
-import BottomNav from '@/components/bottom-nav';
-import { useRouter } from 'expo-router';
-import { BarChart2, Droplets, Home, Moon, Quote, Smile } from 'lucide-react-native';
-import React from 'react';
-import { Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { useRouter } from "expo-router";
+import {
+  AreaChart,
+  BarChart3,
+  Droplets,
+  FileText,
+  Footprints,
+  Heart,
+  Home,
+  Moon,
+  Quote,
+  Sparkles,
+  Sun,
+} from "lucide-react-native";
+import React from "react";
+import {
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const { width } = Dimensions.get('window');
+import BottomNav from "@/components/bottom-nav";
 
 const COLORS = {
-  background: '#FDF8F3',
-  textDark: '#3D3027',
-  textMuted: '#6B5C52',
-  sage: '#4C6647',
-  sageText: '#40593C',
-  sageSub: '#486244',
-  sageBg: 'rgba(205, 235, 196, 0.3)',
-  weeklyBg: '#FFF1E9',
-  weeklyText: '#3D4F6A',
-  sleepBg: 'rgba(255, 218, 217, 0.2)',
-  sleepText: '#6D4849',
-  rose: '#7B5556',
-  waterBg: '#F8E4D9',
-  blue: '#4E607C',
-  quoteText: '#3D3027',
-  authorText: '#88776D',
+  background: "#FFFBF8",
+  surface: "#FFFFFF",
+  textDark: "#3D3027",
+  textMuted: "#6B5C52",
+  primary: "#4C6647", // Sage
+  sageLight: "#E3F1DF",
+  peach: "#FDF1EB", // Soft Peach
+  peachLight: "#FEEEEE",
+  white: "#FFFFFF",
 };
 
-export default function WellnessDashboard() {
+export default function DashboardNative() {
   const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        
-        {/* Welcoming Header */}
+      <StatusBar barStyle="dark-content" />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.heading1}>Welcome back, Elena</Text>
-          <Text style={styles.subHeading}>Find your center in every moment.</Text>
+          <Text style={styles.title}>Welcome back, Elena</Text>
+          <Text style={styles.subtitle}>Find your center in every moment.</Text>
         </View>
 
-        {/* Bento Grid Hub */}
-        <View style={styles.bentoGrid}>
-          
-          {/* Home Dashboard (Bento Large) */}
-          <TouchableOpacity activeOpacity={0.9} style={styles.homeCard} onPress={() => router.push('/dashboard/home-details')}>
-            <View style={styles.homeCardLeft}>
-              <View style={styles.iconCircle}>
-                <Home color={COLORS.sage} size={20} />
+        {/* Main Home Dashboard Card */}
+        <View style={styles.mainCard}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={styles.homeCard}
+            onPress={() => router.push("/dashboard/home-details")}
+          >
+            <View style={styles.mainCardHeader}>
+              <View style={styles.homeIconBox}>
+                <Home size={22} color={COLORS.primary} />
               </View>
-              <View style={styles.homeTextContainer}>
-                <Text style={styles.homeTitle}>Home Dashboard</Text>
-                <Text style={styles.homeSub}>You've completed 4 of 6 daily intentions.</Text>
-              </View>
+              <Text style={styles.percentageText}>66%</Text>
             </View>
-            <View style={styles.progressContainer}>
-              <Svg width="78" height="78" viewBox="0 0 100 100">
-                <Circle cx="50" cy="50" r="45" stroke="rgba(76, 102, 71, 0.1)" strokeWidth="8" fill="none" />
-                <Circle cx="50" cy="50" r="45" stroke={COLORS.sage} strokeWidth="8" 
-                  strokeDasharray="282.7" strokeDashoffset={282.7 * (1 - 0.66)} strokeLinecap="round" fill="none" />
-              </Svg>
-              <Text style={styles.progressText}>66%</Text>
-            </View>
+            <Text style={styles.mainCardTitle}>Home Dashboard</Text>
+            <Text style={styles.mainCardSubtitle}>
+              You've completed 4 of 6 daily intentions.
+            </Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Two Column Layout */}
-          <View style={styles.row}>
-            {/* Weekly Report */}
-            <TouchableOpacity activeOpacity={0.9} style={styles.weeklyCard} onPress={() => router.push('/dashboard/week-report')}>
-              <BarChart2 color={COLORS.blue} size={18} />
-              <Text style={styles.cardTitle}>Weekly Report</Text>
-              <Text style={styles.weeklySub}>+12% vs last week</Text>
-              <View style={styles.barChart}>
-                {[24, 36, 48, 32, 24].map((h, i) => (
-                  <View key={i} style={[styles.bar, { height: h, backgroundColor: i === 2 ? COLORS.blue : COLORS.blue + '33' }]} />
-                ))}
-              </View>
-            </TouchableOpacity>
-
-            {/* Sleep Tracker */}
-            <TouchableOpacity activeOpacity={0.9} style={styles.sleepCard} onPress={() => router.push('/dashboard/sleep-tracker')}>
-              <Moon color={COLORS.rose} size={20} />
-              <Text style={styles.cardTitle}>Sleep Tracker</Text>
-              <Text style={styles.sleepSub}>Excellent Sleep</Text>
-              <Text style={styles.sleepValue}>7h 42m</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Water Intake */}
-          <TouchableOpacity activeOpacity={0.9} style={styles.waterCard} onPress={() => router.push('/dashboard/water-tracker')}>
-            <View style={styles.waterLeft}>
-              <View style={styles.waterIconBox}>
-                <Droplets color={COLORS.blue} size={16} />
-              </View>
-              <View>
-                <Text style={styles.cardTitle}>Water Intake</Text>
-                <Text style={styles.waterSub}>65% Hydrated</Text>
-              </View>
+        {/* Two Columns Grid */}
+        <View style={styles.gridRow}>
+          {/* Weekly Report */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={[styles.smallCard, { marginRight: 8 }]}
+            onPress={() => router.push("/dashboard/week-report")}
+          >
+            <View style={styles.smallCardIconBox}>
+              <BarChart3 size={20} color={COLORS.textDark} />
             </View>
-            <View style={styles.waterBars}>
-              {[1, 1, 1, 0.2, 0.2].map((op, i) => (
-                <View key={i} style={[styles.waterBar, { opacity: op }]} />
+            <Text style={styles.smallCardTitle}>Weekly Report</Text>
+            <Text style={styles.reportTag}>+12% vs last week</Text>
+
+            <View style={styles.miniBarChart}>
+              {[30, 45, 60, 90, 70, 40].map((h, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.miniBar,
+                    {
+                      height: h,
+                      backgroundColor: i === 3 ? COLORS.primary : "#D9E2D6",
+                    },
+                  ]}
+                />
               ))}
             </View>
           </TouchableOpacity>
 
-          {/* Mood Tracker */}
-          <TouchableOpacity activeOpacity={0.9} style={styles.moodCard} onPress={() => router.push('/dashboard/mood-tracker')}>
-            <View style={styles.moodBgOverlay} />
-            <View style={styles.moodHeader}>
-              <Smile color={COLORS.rose} size={25} />
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>DAILY CHECK-IN</Text>
-              </View>
+          {/* Sleep Tracker */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={[styles.smallCard, { marginLeft: 8 }]}
+            onPress={() => router.push("/dashboard/sleep-tracker")}
+          >
+            <View style={styles.smallCardIconBox}>
+              <Moon size={20} color={COLORS.textDark} />
             </View>
-            <View>
-              <Text style={styles.moodTitle}>Mood Tracker</Text>
-              <Text style={styles.moodSub}>Currently feeling: Calm & Creative</Text>
-            </View>
+            <Text style={styles.smallCardTitle}>Sleep Tracker</Text>
+            <Text style={styles.sleepStatus}>Excellent Sleep</Text>
+            <Text style={styles.sleepValue}>7h 42m</Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Quote Card */}
-          <View style={styles.quoteCard}>
-            <View style={styles.quoteIconBox}>
-              <Quote color="#EAFFE2" size={14} fill="#EAFFE2" />
-            </View>
-            <Text style={styles.quoteText}>
-              "The soul usually knows what to do to heal itself. The challenge is to silence the mind."
-            </Text>
-            <Text style={styles.authorText}>CAROLINE MYSS</Text>
+        {/* Water Intake Card */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.waterCard}
+          onPress={() => router.push("/dashboard/water-tracker")}
+        >
+          <View style={styles.waterIconBox}>
+            <Droplets size={22} color="#7B5556" />
           </View>
+          <View style={styles.waterTextContent}>
+            <Text style={styles.waterTitle}>Water Intake</Text>
+            <Text style={styles.waterSubtitle}>65% Hydrated</Text>
+          </View>
+          <View style={styles.waterProgressBar}>
+            {[true, true, true, true, false].map((filled, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.progressSegment,
+                  { backgroundColor: filled ? COLORS.primary : "#D9D3D0" },
+                ]}
+              />
+            ))}
+          </View>
+        </TouchableOpacity>
 
+        {/* Health Hub Section */}
+        <View style={styles.hubSection}>
+          <Text style={styles.sectionTitle}>Health Hub</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.hubScroll}
+          >
+            <HubItem
+              icon={<Sparkles size={24} color="#4C6647" />}
+              label="Achievements"
+              color="#E3F1DF"
+              onPress={() => router.push("/dashboard/achievements")}
+            />
+            <HubItem
+              icon={<FileText size={24} color="#7B5556" />}
+              label="Daily Summary"
+              color="#FEEEEE"
+              onPress={() => router.push("/dashboard/daily-summary")}
+            />
+            <HubItem
+              icon={<Heart size={24} color="#A34A4A" />}
+              label="Heart Rate"
+              color="#FDF1EB"
+              onPress={() => router.push("/dashboard/heart-rate")}
+            />
+            <HubItem
+              icon={<AreaChart size={24} color="#4C6647" />}
+              label="Progress Charts"
+              color="#E3F1DF"
+              onPress={() => router.push("/dashboard/progress-chart")}
+            />
+            <HubItem
+              icon={<Footprints size={24} color="#4E607C" />}
+              label="Steps Detail"
+              color="#E8F0FE"
+              onPress={() => router.push("/dashboard/steps-detail")}
+            />
+          </ScrollView>
+        </View>
+
+        {/* Mood Tracker Card */}
+        <View style={styles.moodTrackerCard}>
+          <View style={styles.moodHeader}>
+            <View style={styles.moodIconRow}>
+              <Sun size={24} color={COLORS.textDark} />
+              <View style={styles.moodIconLine} />
+            </View>
+            <View style={styles.dailyCheckInBadge}>
+              <Text style={styles.dailyCheckInText}>DAILY CHECK-IN</Text>
+            </View>
+          </View>
+          <View style={styles.moodContent}>
+            <Text style={styles.moodTitle}>Mood Tracker</Text>
+            <Text style={styles.moodSubtitle}>
+              Currently feeling: Calm & Creative
+            </Text>
+          </View>
+        </View>
+
+        {/* Quote Card */}
+        <View style={styles.quoteCard}>
+          <View style={styles.quoteIconCircle}>
+            <Quote size={20} color="#FFFFFF" fill="#FFFFFF" />
+          </View>
+          <Text style={styles.quoteText}>
+            "The soul usually knows what to do to heal itself. The challenge is
+            to silence the mind."
+          </Text>
+          <Text style={styles.authorText}>CAROLINE MYSS</Text>
         </View>
       </ScrollView>
-      {/* Bottom Nav */}
-        <BottomNav />
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </SafeAreaView>
   );
 }
 
-type NavIconProps = {
-  icon: React.ComponentType<{
-    color?: string;
-    size?: number;
-    fill?: string;
-  }>; 
-  label: string;
-  active?: boolean;
-};
-
-function NavIcon({ icon: Icon, label, active = false }: NavIconProps) {
+function HubItem({ icon, label, color, onPress }: any) {
   return (
-    <TouchableOpacity style={styles.navItem}>
-      <View style={[styles.navIconBox, active && styles.navIconBoxActive]}>
-        <Icon color={active ? COLORS.sage : COLORS.authorText} size={20} />
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.hubItemCard}
+      onPress={onPress}
+    >
+      <View style={[styles.hubIconCircle, { backgroundColor: color }]}>
+        {icon}
       </View>
-      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+      <Text style={styles.hubItemLabel}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  container: { flex: 1 },
-  content: { paddingBottom: 120 },
-  header: { paddingHorizontal: 24, paddingTop: 40, marginBottom: 24 },
-  heading1: { fontFamily: 'DM Sans', fontSize: 32, fontWeight: '600', color: '#3D3027', letterSpacing: -0.8 },
-  subHeading: { fontFamily: 'DM Sans', fontSize: 16, fontWeight: '500', color: '#6B5C52', opacity: 0.8, marginTop: 8 },
-  bentoGrid: { paddingHorizontal: 24, gap: 16 },
-  homeCard: { backgroundColor: COLORS.sageBg, borderRadius: 24, padding: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  homeCardLeft: { gap: 16 },
-  iconCircle: { width: 48, height: 48, backgroundColor: 'rgba(76, 102, 71, 0.1)', borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  homeTextContainer: { gap: 4 },
-  homeTitle: { fontFamily: 'DM Sans', fontSize: 20, fontWeight: '600', color: '#40593C' },
-  homeSub: { fontFamily: 'DM Sans', fontSize: 14, color: '#486244', maxWidth: 190 },
-  progressContainer: { alignItems: 'center', justifyContent: 'center' },
-  progressText: { position: 'absolute', fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: '700', color: COLORS.sage },
-  row: { flexDirection: 'row', gap: 16 },
-  weeklyCard: { flex: 1.2, backgroundColor: COLORS.weeklyBg, borderRadius: 24, padding: 20, paddingBottom: 30, gap: 4 },
-  sleepCard: { flex: 0.8, backgroundColor: COLORS.sleepBg, borderRadius: 24, padding: 20, gap: 4, borderWidth: 1, borderColor: 'rgba(123, 85, 86, 0.05)' },
-  cardTitle: { fontFamily: 'DM Sans', fontSize: 16, fontWeight: '600', color: '#3D3027' },
-  weeklySub: { fontFamily: 'DM Sans', fontSize: 12, fontWeight: '500', color: '#3D4F6A' },
-  barChart: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 60, paddingTop: 12 },
-  bar: { width: 8, borderRadius: 4 },
-  sleepSub: { fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: '#6D4849' },
-  sleepValue: { fontFamily: 'Plus Jakarta Sans', fontSize: 24, fontWeight: '700', color: COLORS.rose, marginTop: 12 },
-  waterCard: { backgroundColor: COLORS.waterBg, borderRadius: 24, padding: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  waterLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  waterIconBox: { width: 48, height: 48, backgroundColor: 'rgba(78, 96, 124, 0.1)', borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  waterSub: { fontFamily: 'DM Sans', fontSize: 14, color: '#3D4F6A' },
-  waterBars: { flexDirection: 'row', gap: 4 },
-  waterBar: { width: 8, height: 24, backgroundColor: COLORS.blue, borderRadius: 4 },
-  moodCard: { height: 160, borderRadius: 24, padding: 24, justifyContent: 'space-between', overflow: 'hidden' },
-  moodBgOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: '#E8A68E', opacity: 0.4 },
-  moodHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tag: { backgroundColor: 'rgba(255, 248, 245, 0.8)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9999 },
-  tagText: { fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: '700', color: COLORS.rose, letterSpacing: 0.5 },
-  moodTitle: { fontFamily: 'Plus Jakarta Sans', fontSize: 20, fontWeight: '700', color: '#3D3027' },
-  moodSub: { fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: '500', color: '#6B5C52' },
-  quoteCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 40, paddingTop: 40, paddingBottom: 32, alignItems: 'center', marginTop: 16 },
-  quoteIconBox: { position: 'absolute', top: -16, width: 32, height: 32, backgroundColor: COLORS.sage, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  quoteText: { fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontStyle: 'italic', fontWeight: '500', textAlign: 'center', color: '#3D3027', lineHeight: 29 },
-  authorText: { fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: '700', color: '#88776D', letterSpacing: 2.4, marginTop: 16 },
-  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: COLORS.background, flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 16, borderTopLeftRadius: 32, borderTopRightRadius: 32, elevation: 12, shadowColor: '#000', shadowOpacity: 0.12, shadowOffset: { width: 0, height: -2 }, shadowRadius: 8, borderTopWidth: 0 },
-  navItem: { alignItems: 'center', gap: 4 },
-  navIconBox: { padding: 8, borderRadius: 12 },
-  navIconBoxActive: { backgroundColor: COLORS.sageBg },
-  navLabel: { fontSize: 10, fontWeight: '500', color: '#88776D' },
-  navLabelActive: { color: COLORS.sage },
+  scrollContent: { paddingBottom: 140 },
+  header: { paddingHorizontal: 28, marginTop: 40, marginBottom: 32 },
+  title: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textMuted,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+
+  mainCard: {
+    marginHorizontal: 28,
+    padding: 32,
+    borderRadius: 48,
+    backgroundColor: COLORS.sageLight,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 2,
+  },
+  homeCard: { width: "100%" },
+  mainCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  homeIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  percentageText: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    opacity: 0.9,
+  },
+  mainCardTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    marginBottom: 8,
+  },
+  mainCardSubtitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+    opacity: 0.8,
+    lineHeight: 22,
+  },
+
+  gridRow: { flexDirection: "row", paddingHorizontal: 28, marginTop: 16 },
+  smallCard: {
+    flex: 1,
+    padding: 24,
+    borderRadius: 40,
+    backgroundColor: COLORS.peach,
+  },
+  smallCardIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.white + "80",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  smallCardTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    marginBottom: 4,
+  },
+  reportTag: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#4E607C",
+    marginBottom: 12,
+  },
+  miniBarChart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    height: 90,
+    marginTop: 8,
+  },
+  miniBar: { width: 8, borderRadius: 4 },
+  sleepStatus: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    opacity: 0.6,
+    marginBottom: 16,
+  },
+  sleepValue: { fontSize: 28, fontWeight: "900", color: COLORS.textDark },
+
+  waterCard: {
+    marginHorizontal: 28,
+    marginTop: 16,
+    padding: 24,
+    borderRadius: 40,
+    backgroundColor: COLORS.peach,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  waterIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: COLORS.peachLight,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  waterTextContent: { flex: 1 },
+  waterTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    marginBottom: 2,
+  },
+  waterSubtitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    opacity: 0.6,
+  },
+  waterProgressBar: { flexDirection: "row", gap: 6 },
+  progressSegment: { width: 12, height: 28, borderRadius: 6 },
+
+  hubSection: { marginTop: 40 },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: COLORS.textDark,
+    marginBottom: 20,
+    paddingHorizontal: 28,
+  },
+  hubScroll: { paddingHorizontal: 28, gap: 12 },
+  hubItemCard: {
+    width: 110,
+    padding: 12,
+    borderRadius: 24,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hubIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  hubItemLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.textDark,
+    textAlign: "center",
+  },
+
+  moodTrackerCard: {
+    marginHorizontal: 28,
+    marginTop: 40,
+    padding: 32,
+    borderRadius: 48,
+    backgroundColor: "#F5F5F5",
+    opacity: 0.8,
+  },
+  moodHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  moodIconRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  moodIconLine: {
+    width: 12,
+    height: 3,
+    backgroundColor: COLORS.textDark,
+    borderRadius: 2,
+  },
+  dailyCheckInBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+  },
+  dailyCheckInText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+    opacity: 0.6,
+    letterSpacing: 0.5,
+  },
+  moodContent: { gap: 4 },
+  moodTitle: { fontSize: 24, fontWeight: "800", color: COLORS.textDark },
+  moodSubtitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+    opacity: 0.7,
+  },
+
+  quoteCard: {
+    marginTop: 60,
+    alignItems: "center",
+    paddingHorizontal: 40,
+    marginBottom: 40,
+  },
+  quoteIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#8B9B88",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  quoteText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: COLORS.textDark,
+    textAlign: "center",
+    lineHeight: 32,
+    marginBottom: 20,
+  },
+  authorText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+    opacity: 0.6,
+    letterSpacing: 2,
+  },
+
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: COLORS.background,
+    paddingBottom: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.02)",
+  },
+  navButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  navButtonActive: { backgroundColor: "#BDD4B9", borderRadius: 16 },
+  navLabel: { fontSize: 10, fontWeight: "800" },
 });
