@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../../utils/supabase';
 import { colors } from '../../../theme/colors';
 const settings = [
   { emoji: '⭐', label: 'Notification', bg: 'rgba(181,200,232,0.35)' },
@@ -14,6 +15,17 @@ const settings = [
 
 export default function ProfileScreen({ navigation }: any) {
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.replace('/(auth)/login');
+    } catch (error: any) {
+      console.error('Error signing out:', error.message);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -63,6 +75,8 @@ export default function ProfileScreen({ navigation }: any) {
     router.push('/(tabs)/wellness/settings-about');
   } else if (item.label === 'Goals') {
     router.push('/(tabs)/wellness/health-goals');
+  } else if (item.label === 'Sign Out') {
+    handleSignOut();
   }
 }}
             >

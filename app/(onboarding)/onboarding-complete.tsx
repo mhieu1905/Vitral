@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -12,6 +12,8 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from '../../utils/supabase';
+import { onboardingApi } from '../../services/onboardingApi';
 // ─── COLORS ──────────────────────────────────────────────────────
 const C = {
   bg: '#FAF7F4',
@@ -32,6 +34,38 @@ const C = {
 
 export default function AllSetScreen({ navigation }: any) {
   const router = useRouter();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const data = await onboardingApi.getProfile(user.id);
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const calorieGoal = profile?.calorie_goal ? Math.round(profile.calorie_goal) : '...';
+  const tdee = profile?.tdee ? Math.round(profile.tdee) : '...';
+  const weight = profile?.weight_kg || '...';
+  const height = profile?.height_cm || '...';
+  const age = profile?.age || '...';
+
+  const formatGoal = (g: string) => {
+    if (!g) return '...';
+    return g.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+  const goalText = profile?.goal ? formatGoal(profile.goal) : '...';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* ── HEADER ── */}
@@ -75,28 +109,49 @@ export default function AllSetScreen({ navigation }: any) {
               {/* Kcal stat */}
               <View style={styles.statBox}>
                 <MaterialCommunityIcons name="medal-outline" size={20} color={C.green} />
-                <Text style={styles.statValue}>2,400</Text>
+                <Text style={styles.statValue}>{calorieGoal}</Text>
                 <Text style={styles.statUnit}>kcal Goal</Text>
               </View>
 
               {/* Divider */}
               <View style={styles.statDivider} />
 
-              {/* Water stat */}
+              {/* TDEE stat */}
               <View style={styles.statBox}>
-                <Ionicons name="water-outline" size={20} color={C.primary} />
-                <Text style={styles.statValue}>8</Text>
-                <Text style={styles.statUnit}>Glasses</Text>
+                <MaterialCommunityIcons name="fire" size={20} color={C.primary} />
+                <Text style={styles.statValue}>{tdee}</Text>
+                <Text style={styles.statUnit}>TDEE (kcal)</Text>
               </View>
             </View>
 
-            {/* System Calibration */}
+            {/* Goal Calibration */}
             <View style={styles.calibrationRow}>
-              <Text style={styles.calibrationLabel}>System Calibration</Text>
+              <Text style={styles.calibrationLabel}>Goal: {goalText}</Text>
               <Text style={styles.calibrationPercent}>100%</Text>
             </View>
             <View style={styles.progressTrack}>
               <View style={styles.progressFill} />
+            </View>
+          </View>
+
+          {/* ── PERSONAL METRICS CARD ── */}
+          <View style={[styles.goalCard, { marginTop: 16 }]}>
+            <Text style={styles.goalCardLabel}>YOUR METRICS</Text>
+            <View style={[styles.statsRow, { marginBottom: 0 }]}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{weight}</Text>
+                <Text style={styles.statUnit}>kg</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{height}</Text>
+                <Text style={styles.statUnit}>cm</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{age}</Text>
+                <Text style={styles.statUnit}>years</Text>
+              </View>
             </View>
           </View>
 

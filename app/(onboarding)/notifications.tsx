@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -8,17 +8,21 @@ import {
   ScrollView,
   Switch,
   Platform,
-  Image,
   ImageBackground,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useOnboardingStore } from '../../store/onboardingStore';
+import { onboardingApi } from '../../services/onboardingApi';
+import { supabase } from '../../utils/supabase';
 
 // ─── COLORS ──────────────────────────────────────────────────────
 const C = {
   bg: '#FAF7F4',
-  primary: '#C97E7E',       // dusty rose
+  primary: '#C97E7E',
   primaryLight: '#F5E8E8',
   green: '#4A6741',
   greenLight: '#D6E5D3',
@@ -37,9 +41,11 @@ const C = {
 type TimeSlot = 'Morning' | 'Afternoon' | 'Evening';
 
 export default function StayNotifiedScreen({ navigation }: any) {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot>('Afternoon');
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot>('Afternoon');
+  
+  const store = useOnboardingStore();
 
   const TIME_SLOTS: TimeSlot[] = ['Morning', 'Afternoon', 'Evening'];
 
@@ -47,6 +53,66 @@ export default function StayNotifiedScreen({ navigation }: any) {
     Morning: '08:00 AM',
     Afternoon: '02:00 PM',
     Evening: '07:00 PM',
+  };
+
+  const dbTimeMap: Record<TimeSlot, string> = {
+    Morning: '08:00:00',
+    Afternoon: '14:00:00',
+    Evening: '19:00:00',
+  };
+
+  // Sync selectedSlot based on store's reminderTime on mount
+  useEffect(() => {
+    if (store.reminderTime) {
+      if (store.reminderTime.startsWith('08')) setSelectedSlot('Morning');
+      else if (store.reminderTime.startsWith('14')) setSelectedSlot('Afternoon');
+      else if (store.reminderTime.startsWith('19')) setSelectedSlot('Evening');
+    }
+  }, []);
+
+  const handleFinishSetup = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Could not authenticate user. Please log in again.");
+      }
+
+      // Prepare payload
+      const payload = {
+        user_id: user.id,
+        goal: store.goal || 'improve_fitness',
+        height_cm: store.height || 175,
+        weight_kg: store.weight || 70,
+        age: store.age || 25,
+        gender: store.gender || 'prefer_not_to_say',
+        activity_level: store.activityLevel || 'moderately_active',
+        notification_enabled: store.notificationEnabled,
+        reminder_time: store.notificationEnabled ? dbTimeMap[selectedSlot] : null,
+      };
+
+      if (store.isProfileExists) {
+        await onboardingApi.updateProfile(user.id, payload);
+      } else {
+        await onboardingApi.createProfile(payload);
+        store.setIsProfileExists(true);
+      }
+
+      router.push('/(onboarding)/onboarding-complete');
+    } catch (error) {
+      const err = error as any;
+      Alert.alert("Error", err.message || "Something went wrong saving your profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    store.setNotificationEnabled(false);
+    store.setReminderTime(null);
+    handleFinishSetup();
   };
 
   return (
@@ -57,58 +123,22 @@ export default function StayNotifiedScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Stay Notified</Text>
-        <TouchableOpacity onPress={() => {}}>
+        <TouchableOpacity onPress={handleSkip} disabled={loading}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
-        {/* ════════════════════════════════════════════════════════
-         *  HERO IMAGE SECTION
-         * ════════════════════════════════════════════════════════
-         *
-         *  HƯỚNG DẪN XỬ LÝ HÌNH ẢNH ĐẦU TRANG:
-         *  ──────────────────────────────────────────────────────
-         *  Thiết kế gốc có 2 lớp ảnh:
-         *    1. Ảnh nền toàn khối (cây xương rồng/lá cây mờ nhạt)
-         *    2. Icon chuông nằm trên card trắng ở giữa
-         *
-         *  CÁCH 1 — Dùng ảnh local (khuyến nghị):
-         *    • Lưu ảnh nền vào: assets/images/notification-hero.png
-         *    • Thay source bên dưới:
-         *        source={require('../assets/images/notification-hero.png')}
-         *
-         *  CÁCH 2 — Dùng ảnh remote:
-         *        source={{ uri: 'https://your-cdn.com/hero.png' }}
-         *
-         *  CÁCH 3 — Dùng SVG/Lottie animation (đẹp nhất):
-         *    • Cài: npx expo install lottie-react-native
-         *    • Import: import LottieView from 'lottie-react-native'
-         *    • Thay toàn bộ khối heroSection bằng:
-         *        <LottieView source={require('../assets/bell.json')}
-         *                    autoPlay loop style={{ width: 200, height: 200 }} />
-         *
-         *  Các decoration circles (hồng + be) được tạo bằng View thuần
-         *  → không cần ảnh, render natively.
-         * ──────────────────────────────────────────────────────
-         */}
         <View style={styles.heroSection}>
-          {/* Ảnh nền hero — thay source theo hướng dẫn trên */}
           <ImageBackground
             source={{ uri: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80' }}
             style={styles.heroBg}
             imageStyle={styles.heroBgImage}
             resizeMode="cover"
           >
-            {/* Light overlay để giữ màu pastel nhạt như Figma */}
             <View style={styles.heroOverlay} />
-
-            {/* Decoration circles */}
             <View style={styles.circlePink} />
             <View style={styles.circleBeige} />
-
-            {/* Bell card */}
             <View style={styles.bellCard}>
               <Ionicons name="notifications-outline" size={40} color={C.green} />
             </View>
@@ -132,8 +162,11 @@ export default function StayNotifiedScreen({ navigation }: any) {
               <Text style={styles.toggleSub}>Daily mindful reminders</Text>
             </View>
             <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              value={store.notificationEnabled}
+              onValueChange={(val) => {
+                store.setNotificationEnabled(val);
+                if (val) store.setReminderTime(dbTimeMap[selectedSlot]);
+              }}
               trackColor={{ false: '#D0CBC6', true: C.toggleTrack }}
               thumbColor={C.white}
               ios_backgroundColor="#D0CBC6"
@@ -143,21 +176,26 @@ export default function StayNotifiedScreen({ navigation }: any) {
           {/* ── DAILY REMINDER TIME ── */}
           <Text style={styles.sectionLabel}>DAILY REMINDER TIME</Text>
 
-          <View style={styles.timeBox}>
+          <View style={[styles.timeBox, !store.notificationEnabled && { opacity: 0.5 }]}>
             <Text style={styles.timeText}>{timeMap[selectedSlot]}</Text>
             <Ionicons name="time-outline" size={20} color={C.subtext} />
           </View>
 
           {/* Time slot chips */}
-          <View style={styles.chipsRow}>
+          <View style={[styles.chipsRow, !store.notificationEnabled && { opacity: 0.5 }]}>
             {TIME_SLOTS.map((slot) => {
               const isActive = selectedSlot === slot;
               return (
                 <TouchableOpacity
                   key={slot}
                   style={[styles.chip, isActive && styles.chipActive]}
-                  onPress={() => setSelectedSlot(slot)}
+                  onPress={() => {
+                    if (!store.notificationEnabled) return;
+                    setSelectedSlot(slot);
+                    store.setReminderTime(dbTimeMap[slot]);
+                  }}
                   activeOpacity={0.8}
+                  disabled={!store.notificationEnabled}
                 >
                   <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                     {slot}
@@ -171,8 +209,12 @@ export default function StayNotifiedScreen({ navigation }: any) {
 
       {/* ── FOOTER ── */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.finishBtn} activeOpacity={0.85} onPress={() => router.push('/(onboarding)/onboarding-complete')}>
-          <Text style={styles.finishBtnText}>Finish Setup  ✓✓</Text>
+        <TouchableOpacity style={styles.finishBtn} activeOpacity={0.85} onPress={handleFinishSetup} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color={C.white} />
+          ) : (
+            <Text style={styles.finishBtnText}>Finish Setup  ✓✓</Text>
+          )}
         </TouchableOpacity>
         <Text style={styles.footerNote}>
           You can change these settings anytime in your profile.
@@ -188,8 +230,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.bg,
   },
-
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,12 +257,9 @@ const styles = StyleSheet.create({
     width: 36,
     textAlign: 'right',
   },
-
   scroll: {
     paddingBottom: 16,
   },
-
-  // ── HERO ─────────────────────────────────────────────────────
   heroSection: {
     height: 220,
     marginBottom: 8,
@@ -234,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroBgImage: {
-    opacity: 0.18,   // ảnh nền rất nhạt như Figma (pastelize effect)
+    opacity: 0.18,
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -272,8 +309,6 @@ const styles = StyleSheet.create({
     elevation: 6,
     zIndex: 2,
   },
-
-  // ── BODY ─────────────────────────────────────────────────────
   body: {
     paddingHorizontal: 24,
   },
@@ -292,8 +327,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 28,
   },
-
-  // Toggle card
   toggleCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,8 +359,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.subtext,
   },
-
-  // Time section
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -353,8 +384,6 @@ const styles = StyleSheet.create({
     color: C.text,
     letterSpacing: 0.5,
   },
-
-  // Chips
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -382,8 +411,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '600',
   },
-
-  // Footer
   footer: {
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'ios' ? 28 : 20,

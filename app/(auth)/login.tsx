@@ -18,6 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, Ellipse, Path, Svg } from "react-native-svg";
 import { supabase } from '../../utils/supabase';
 
+import { onboardingApi } from '../../services/onboardingApi';
+
 // --- Icon Components ---
 const EmailIcon = () => (
   <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -172,7 +174,7 @@ const WaveHeader = () => (
 
 // --- Main Screen ---
 export default function LoginScreen() {
-  const [email, setEmail] = useState("hellovitaltrack@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
@@ -187,16 +189,35 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       Alert.alert('Sign In Failed', error.message);
-    } else {
+      return;
+    }
+
+    try {
+      // Check if user has already completed onboarding
+      if (authData?.user) {
+        const profile = await onboardingApi.getProfile(authData.user.id);
+        if (profile) {
+          router.replace("/(tabs)/dashboard");
+        } else {
+          router.push("/(onboarding)/goal-selection");
+        }
+      } else {
+        router.push("/(onboarding)/goal-selection");
+      }
+    } catch (apiError) {
+      console.error('Profile fetch error:', apiError);
+      // Fallback to onboarding if error occurs
       router.push("/(onboarding)/goal-selection");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -241,7 +262,7 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  placeholder="your@email.com"
+                  placeholder="Enter your email"
                   placeholderTextColor="#C4AFA6"
                   onFocus={() => setEmailFocused(true)}
                   onBlur={() => setEmailFocused(false)}
