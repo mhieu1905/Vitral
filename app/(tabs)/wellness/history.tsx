@@ -1,401 +1,670 @@
 import BottomNav from '@/components/bottom-nav';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
+
+import React, {
+  useCallback,
+  useState,
+} from 'react';
+
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-type TabType = 'list' | 'calendar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ENTRIES = [
-  {
-    id: '1',
-    type: 'reflection',
-    badge: 'REFLECTION',
-    badgeStyle: 'reflection',
-    date: 'October 24, 2023',
-    title: 'Quiet morning at the coastal path.',
-    body: 'Today I felt an immense sense of clarity. The fog was rolling in over the cliffs and it felt like the world was holding its breath. I realized that my anxiety often stems from trying to see too far ahead.',
-    mood: { emoji: '☀️', label: 'Calm & Bright' },
-    hasImage: true,
-    imageEmoji: '🌿',
-    imageBg: ['#6A8A6A', '#8AAA7A'],
-    tags: [],
-    rightEmoji: '',
-  },
-  {
-    id: '2',
-    type: 'mood',
-    badge: '',
-    badgeStyle: '',
-    date: 'October 22, 2023',
-    title: 'Feeling a bit overwhelmed with work projects.',
-    body: 'Tried a 10-minute box breathing exercise during lunch. It helped, but the pressure is still there. Need to prioritize sleep tonight.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '',
-    imageBg: [],
-    tags: [],
-    rightEmoji: '🌧️',
-    avatars: ['🌿', '🌱'],
-    avatarExtra: 2,
-  },
-  {
-    id: '3',
-    type: 'nature',
-    badge: '',
-    badgeStyle: 'highlighted',
-    date: 'October 21, 2023',
-    title: 'The garden is finally starting to bloom.',
-    body: 'Grateful for the small things. The lavender smells amazing. Spent 30 minutes just sitting on the bench watching the bees.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '',
-    imageBg: [],
-    tags: ['#GRATEFUL', '#NATURE'],
-    rightEmoji: '🌿',
-  },
-  {
-    id: '4',
-    type: 'plain',
-    badge: '',
-    badgeStyle: 'plain',
-    date: 'October 19, 2023',
-    title: 'The beauty of doing nothing.',
-    body: 'Decided to leave my phone in another room for the entire afternoon. The silence was uncomfortable at first, then liberating.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '🌅',
-    imageBg: ['#8B6914', '#C8A020'],
-    tags: [],
-    rightEmoji: '',
-    quote: '"In the midst of movement and chaos, keep stillness inside of you"',
-  },
-];
+import {
+  getMoodHistory,
+  getMoodStats,
+  MoodLog,
+  MoodStats,
+} from '../../../utils/moodService';
+//..
+import {
+  getJournalHistory,
+  JournalEntry,
+} from '../../../utils/journalService';
 
-export default function HistoryScreen() {
-  const router = useRouter();
-  const [tab, setTab] = useState<TabType>('list');
-  const [search, setSearch] = useState('');
+const C = {
+  bg: '#FDF8F3',
+  surface: '#F5EFE6',
+  dark: '#3D3530',
+  muted: '#8C7B72',
+  sage: '#A8C5A0',
+  sageD: '#6B9E62',
+  white: '#FFFFFF',
+  rose: '#F5C4C4',
+  roseD: '#C47A7A',
+};
 
-  const filtered = ENTRIES.filter(
-    (e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.body.toLowerCase().includes(search.toLowerCase())
+// ─────────────────────────────────────────────────────
+// Feed Types
+// ─────────────────────────────────────────────────────
+type FeedItem =
+  | { kind: 'mood'; data: MoodLog }
+  | { kind: 'journal'; data: JournalEntry };
+
+// ─────────────────────────────────────────────────────
+// Build Timeline Feed
+// ─────────────────────────────────────────────────────
+function buildFeed(
+  moods: MoodLog[],
+  journals: JournalEntry[]
+): FeedItem[] {
+  const moodItems: FeedItem[] = moods.map((d) => ({
+    kind: 'mood',
+    data: d,
+  }));
+
+  const journalItems: FeedItem[] = journals.map((d) => ({
+    kind: 'journal',
+    data: d,
+  }));
+
+  return [...moodItems, ...journalItems].sort(
+    (a, b) =>
+      new Date(b.data.logged_at).getTime() -
+      new Date(a.data.logged_at).getTime()
   );
+}
+
+// ─────────────────────────────────────────────────────
+// Mood Card
+// ─────────────────────────────────────────────────────
+function MoodCard({
+  item,
+}: {
+  item: MoodLog;
+}) {
+  const date = new Date(item.logged_at);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.menuBtn}>
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>The Sanctuary</Text>
-        <View style={styles.avatarSm}>
-          <Text style={styles.avatarEmoji}>🧑‍💼</Text>
+    <View style={s.card}>
+      <View
+        style={[
+          s.kindBadge,
+          {
+            backgroundColor:
+              'rgba(168,197,160,0.25)',
+          },
+        ]}
+      >
+        <Text
+          style={[
+            s.kindText,
+            { color: C.sageD },
+          ]}
+        >
+          Mood Check-in
+        </Text>
+      </View>
+
+      <View style={s.cardRow}>
+        <Text style={s.bigEmoji}>
+          {item.mood_emoji}
+        </Text>
+
+        <View style={s.cardBody}>
+          <Text style={s.cardTitle}>
+            {item.mood_label}
+          </Text>
+
+          {item.note ? (
+            <Text
+              style={s.noteText}
+              numberOfLines={2}
+            >
+              {item.note}
+            </Text>
+          ) : null}
+
+          <Text style={s.cardDate}>
+            {date.toLocaleDateString(
+              'vi-VN',
+              {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }
+            )}
+            {' · '}
+            {date.toLocaleTimeString(
+              'vi-VN',
+              {
+                hour: '2-digit',
+                minute: '2-digit',
+              }
+            )}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// Journal Card
+// ─────────────────────────────────────────────────────
+function JournalCard({
+  item,
+}: {
+  item: JournalEntry;
+}) {
+  const date = new Date(item.logged_at);
+
+  return (
+    <View style={s.card}>
+      <View
+        style={[
+          s.kindBadge,
+          {
+            backgroundColor:
+              'rgba(245,196,196,0.35)',
+          },
+        ]}
+      >
+        <Text
+          style={[
+            s.kindText,
+            { color: C.roseD },
+          ]}
+        >
+          Journal
+        </Text>
+      </View>
+
+      <View style={s.cardRow}>
+        <Text style={s.bigEmoji}>
+          {item.mood_emoji}
+        </Text>
+
+        <View style={s.cardBody}>
+          {item.content ? (
+            <Text
+              style={s.journalText}
+              numberOfLines={3}
+            >
+              {item.content}
+            </Text>
+          ) : (
+            <Text style={s.journalEmpty}>
+              No content
+            </Text>
+          )}
+
+          <Text style={s.cardDate}>
+            {date.toLocaleDateString(
+              'vi-VN',
+              {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }
+            )}
+            {' · '}
+            {date.toLocaleTimeString(
+              'vi-VN',
+              {
+                hour: '2-digit',
+                minute: '2-digit',
+              }
+            )}
+          </Text>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>History</Text>
-          <Text style={styles.heroSub}>Revisit your emotional landscape.</Text>
-        </View>
-
-        {/* Search */}
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search thoughts..."
-            placeholderTextColor="#9A9A8E"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'list' && styles.tabBtnActive]}
-            onPress={() => setTab('list')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'list' && styles.tabBtnTextActive]}>
-              ☰ List View
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'calendar' && styles.tabBtnActive]}
-            onPress={() => setTab('calendar')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'calendar' && styles.tabBtnTextActive]}>
-              📅 Calendar
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Entry 1: Reflection with image ── */}
-        <View style={styles.card}>
-          <View style={styles.entryMeta}>
-            <View style={[styles.badge, styles.badgeReflection]}>
-              <Text style={[styles.badgeText, styles.badgeTextReflection]}>REFLECTION</Text>
+      {item.tags?.length > 0 && (
+        <View style={s.tagsRow}>
+          {item.tags.map((tag, i) => (
+            <View key={i} style={s.tag}>
+              <Text style={s.tagText}>
+                {tag}
+              </Text>
             </View>
-            <Text style={styles.entryDate}>October 24, 2023</Text>
-          </View>
-          <Text style={styles.entryTitle}>Quiet morning at the coastal path.</Text>
-          <Text style={styles.entryBody}>
-            Today I felt an immense sense of clarity. The fog was rolling in over the cliffs
-            and it felt like the world was holding its breath. I realized that my anxiety often
-            stems from trying to see too far ahead.
-          </Text>
-          <View style={styles.moodPill}>
-            <Text style={styles.moodEmoji}>☀️</Text>
-            <Text style={styles.moodLabel}>Calm & Bright</Text>
-          </View>
-          {/* Image placeholder */}
-          <View style={[styles.entryImg, { backgroundColor: '#7A9A7A' }]}>
-            <Text style={styles.entryImgEmoji}>🌿</Text>
-          </View>
+          ))}
         </View>
+      )}
+    </View>
+  );
+}
 
-        {/* ── Weekly Rhythm Card ── */}
-        <View style={styles.rhythmCard}>
-          <Text style={styles.rhythmIcon}>📈</Text>
-          <Text style={styles.rhythmTitle}>Weekly Rhythm</Text>
-          <Text style={styles.rhythmDesc}>
-            You've reached a state of "Flow" 4 times this week. Morning entries show 20%
-            higher calmness scores.
+// ─────────────────────────────────────────────────────
+// Stat Bar
+// ─────────────────────────────────────────────────────
+function StatBar({
+  stat,
+}: {
+  stat: MoodStats;
+}) {
+  return (
+    <View style={s.statRow}>
+      <Text style={s.statEmoji}>
+        {stat.emoji}
+      </Text>
+
+      <View style={s.barTrack}>
+        <View
+          style={[
+            s.barFill,
+            {
+              width: `${stat.percentage}%`,
+            },
+          ]}
+        />
+      </View>
+
+      <Text style={s.statPct}>
+        {stat.percentage}%
+      </Text>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────
+export default function MoodHistoryScreen() {
+  const router = useRouter();
+
+  const [feed, setFeed] =
+    useState<FeedItem[]>([]);
+
+  const [stats, setStats] =
+    useState<MoodStats[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [tab, setTab] = useState<
+    'feed' | 'stats'
+  >('feed');
+
+  // ───────────────────────────────────────────────────
+  // Load Data
+  // ───────────────────────────────────────────────────
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const [moods, journals, st] =
+        await Promise.all([
+          getMoodHistory(30),
+          getJournalHistory(30),
+          getMoodStats(),
+        ]);
+
+      setFeed(
+        buildFeed(moods, journals)
+      );
+
+      setStats(st);
+    } catch (err: any) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ───────────────────────────────────────────────────
+  // Auto reload when screen focused
+  // ───────────────────────────────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  // ───────────────────────────────────────────────────
+  // Render Feed Item
+  // ───────────────────────────────────────────────────
+  const renderItem = ({
+    item,
+  }: {
+    item: FeedItem;
+  }) =>
+    item.kind === 'mood' ? (
+      <MoodCard
+        item={item.data as MoodLog}
+      />
+    ) : (
+      <JournalCard
+        item={item.data as JournalEntry}
+      />
+    );
+
+  return (
+    <SafeAreaView style={s.safe}>
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity
+          style={s.backBtn}
+          onPress={() => router.back()}
+        >
+          <Text style={s.backArrow}>
+            ←
           </Text>
-          <Text style={styles.rhythmGoalLbl}>CONSISTENCY GOAL · 75%</Text>
-          <View style={styles.rhythmBarWrap}>
-            <View style={[styles.rhythmBar, { width: '75%' }]} />
-          </View>
-        </View>
-
-        {/* ── Entry 2: Overwhelmed ── */}
-        <View style={styles.card}>
-          <View style={styles.entryMeta}>
-            <Text style={styles.entryDate}>October 22, 2023</Text>
-            <Text style={[styles.entryDate, { marginLeft: 'auto', fontSize: 18 }]}>🌧️</Text>
-          </View>
-          <Text style={styles.entryTitle}>Feeling a bit overwhelmed with work projects.</Text>
-          <Text style={styles.entryBody}>
-            Tried a 10-minute box breathing exercise during lunch. It helped, but the pressure
-            is still there. Need to prioritize sleep tonight.
-          </Text>
-          <View style={styles.avatarCluster}>
-            {['🌿', '🌱'].map((av, i) => (
-              <View key={i} style={[styles.av, { marginLeft: i === 0 ? 0 : -6 }]}>
-                <Text style={{ fontSize: 12 }}>{av}</Text>
-              </View>
-            ))}
-            <Text style={styles.avExtra}>+2</Text>
-          </View>
-        </View>
-
-        {/* ── Entry 3: Nature (highlighted) ── */}
-        <View style={styles.highlightCard}>
-          <View style={styles.entryMeta}>
-            <Text style={styles.entryDate}>October 21, 2023</Text>
-            <Text style={[styles.entryDate, { marginLeft: 'auto', fontSize: 18 }]}>🌿</Text>
-          </View>
-          <Text style={styles.entryTitle}>The garden is finally starting to bloom.</Text>
-          <Text style={styles.entryBody}>
-            Grateful for the small things. The lavender smells amazing. Spent 30 minutes just
-            sitting on the bench watching the bees.
-          </Text>
-          <View style={styles.tagRow}>
-            {['#GRATEFUL', '#NATURE'].map((t) => (
-              <Text key={t} style={styles.tag}>{t}</Text>
-            ))}
-          </View>
-        </View>
-
-        {/* ── Image Banner ── */}
-        <View style={styles.insightImg}>
-          <Text style={styles.insightImgEmoji}>🌅</Text>
-        </View>
-
-        {/* ── Entry 4: Plain with quote ── */}
-        <View style={styles.plainCard}>
-          <Text style={[styles.entryDate, { marginBottom: 6 }]}>October 19, 2023</Text>
-          <Text style={[styles.entryTitle, { fontSize: 22, marginBottom: 10 }]}>
-            The beauty of doing nothing.
-          </Text>
-          <View style={styles.blockquote}>
-            <Text style={styles.blockquoteText}>
-              "In the midst of movement and chaos, keep stillness inside of you"
-            </Text>
-          </View>
-          <Text style={[styles.entryBody, { marginTop: 10 }]}>
-            Decided to leave my phone in another room for the entire afternoon. The silence was
-            uncomfortable at first, then liberating.
-          </Text>
-        </View>
-
-        {/* Load More */}
-        <TouchableOpacity style={styles.loadMoreBtn}>
-          <Text style={styles.loadMoreText}>Load older entries  ↓</Text>
         </TouchableOpacity>
-      </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/wellness/journal')}
-      >
-        <Text style={styles.fabEmoji}>✏️</Text>
-      </TouchableOpacity>
-      {/* <BottomNav navigation={navigation} activeScreen="Wellness" /> */}
-            <BottomNav/>
+        <Text style={s.title}>
+          My History
+        </Text>
+
+        <View style={{ width: 34 }} />
+      </View>
+
+      {/* Tabs */}
+      <View style={s.tabs}>
+        <TouchableOpacity
+          style={[
+            s.tab,
+            tab === 'feed' &&
+              s.tabActive,
+          ]}
+          onPress={() =>
+            setTab('feed')
+          }
+        >
+          <Text
+            style={[
+              s.tabText,
+              tab === 'feed' &&
+                s.tabTextActive,
+            ]}
+          >
+            Timeline
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            s.tab,
+            tab === 'stats' &&
+              s.tabActive,
+          ]}
+          onPress={() =>
+            setTab('stats')
+          }
+        >
+          <Text
+            style={[
+              s.tabText,
+              tab === 'stats' &&
+                s.tabTextActive,
+            ]}
+          >
+            Statistics
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      {loading ? (
+        <ActivityIndicator
+          style={{ marginTop: 40 }}
+          color={C.sage}
+        />
+      ) : tab === 'feed' ? (
+        <FlatList
+          data={feed}
+          keyExtractor={(item) =>
+            item.data.id
+          }
+          renderItem={renderItem}
+          contentContainerStyle={s.list}
+          ListEmptyComponent={
+            <Text style={s.empty}>
+              Chưa có dữ liệu nào.
+            </Text>
+          }
+        />
+      ) : (
+        <View style={s.statsWrap}>
+          <Text style={s.statsTitle}>
+            Mood 7 ngày gần nhất
+          </Text>
+
+          {stats.every(
+            (s) => s.count === 0
+          ) ? (
+            <Text style={s.empty}>
+              Chưa có dữ liệu thống kê.
+            </Text>
+          ) : (
+            stats.map((st, i) => (
+              <StatBar
+                key={i}
+                stat={st}
+              />
+            ))
+          )}
+        </View>
+      )}
+
+      <BottomNav />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F3EF' },
+// ─────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
 
-  topBar: {
-    flexDirection: 'row', alignItems: 'center',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  menuBtn: { padding: 4 },
-  menuLine: { width: 18, height: 2, backgroundColor: '#2C5F2E', borderRadius: 2, marginVertical: 2 },
-  topTitle: { fontSize: 15, fontWeight: '700', color: '#2C5F2E' },
-  avatarSm: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#4A9B8E', alignItems: 'center', justifyContent: 'center',
+
+  backBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: C.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarEmoji: { fontSize: 17 },
 
-  scroll: { paddingBottom: 90 },
-
-  hero: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
-  heroTitle: { fontSize: 28, fontWeight: '800', color: '#1A2010', marginBottom: 4 },
-  heroSub: { fontSize: 12, color: '#8A8A7E' },
-
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginHorizontal: 16, marginBottom: 10,
-    backgroundColor: '#EDEAE3', borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 9,
+  backArrow: {
+    fontSize: 18,
+    color: C.dark,
   },
-  searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, fontSize: 13, color: '#5A5A50' },
 
-  tabRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 14 },
-  tabBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1, borderColor: '#D0CCC4', backgroundColor: '#fff',
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: C.dark,
   },
-  tabBtnActive: { backgroundColor: '#3A5A2A', borderColor: '#3A5A2A' },
-  tabBtnText: { fontSize: 12, color: '#5A5A50', fontWeight: '500' },
-  tabBtnTextActive: { color: '#fff' },
 
-  /* Cards */
+  tabs: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginBottom: 12,
+  },
+
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+
+  tabActive: {
+    borderBottomColor: C.sageD,
+  },
+
+  tabText: {
+    fontSize: 14,
+    color: C.muted,
+    fontWeight: '500',
+  },
+
+  tabTextActive: {
+    color: C.sageD,
+    fontWeight: '600',
+  },
+
+  list: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+
+  empty: {
+    textAlign: 'center',
+    color: C.muted,
+    marginTop: 40,
+    fontSize: 14,
+  },
+
+  // Cards
   card: {
-    backgroundColor: '#fff', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
-  },
-  highlightCard: {
-    backgroundColor: '#F0EDE5', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
-  },
-  plainCard: {
-    marginHorizontal: 16, marginBottom: 12, paddingVertical: 14,
+    backgroundColor: C.white,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
   },
 
-  entryMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  badge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeReflection: { backgroundColor: '#E8F5EE' },
-  badgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  badgeTextReflection: { color: '#3A7A3A' },
-  entryDate: { fontSize: 11, color: '#9A9A8E' },
-  entryTitle: { fontSize: 16, fontWeight: '700', color: '#1A2010', lineHeight: 22, marginBottom: 6 },
-  entryBody: { fontSize: 12, color: '#5A5A50', lineHeight: 19, marginBottom: 10 },
-
-  moodPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, backgroundColor: '#FFF8E0',
-    borderWidth: 1, borderColor: '#F0E0A0',
-    alignSelf: 'flex-start', marginBottom: 10,
+  kindBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 8,
   },
-  moodEmoji: { fontSize: 14 },
-  moodLabel: { fontSize: 11, fontWeight: '600', color: '#8A7020' },
 
-  entryImg: {
-    width: '100%', height: 130, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
+  kindText: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  entryImgEmoji: { fontSize: 40 },
 
-  /* Weekly Rhythm */
-  rhythmCard: {
-    backgroundColor: '#FDECEA', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  rhythmIcon: { fontSize: 20, marginBottom: 6 },
-  rhythmTitle: { fontSize: 15, fontWeight: '700', color: '#1A2010', marginBottom: 4 },
-  rhythmDesc: { fontSize: 12, color: '#7A5A5A', lineHeight: 18, marginBottom: 10 },
-  rhythmGoalLbl: { fontSize: 9, color: '#9A7070', letterSpacing: 0.8, marginBottom: 4 },
-  rhythmBarWrap: { height: 4, backgroundColor: '#F0D8D8', borderRadius: 2, overflow: 'hidden' },
-  rhythmBar: { height: '100%', backgroundColor: '#C06060', borderRadius: 2 },
 
-  /* Avatar cluster */
-  avatarCluster: { flexDirection: 'row', alignItems: 'center' },
-  av: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: '#E8F0E8', borderWidth: 2, borderColor: '#fff',
-    alignItems: 'center', justifyContent: 'center',
+  bigEmoji: {
+    fontSize: 32,
   },
-  avExtra: { fontSize: 11, color: '#7A8070', marginLeft: 6 },
 
-  /* Tags */
-  tagRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  tag: { fontSize: 10, color: '#5A7A5A', fontWeight: '700', letterSpacing: 0.5 },
-
-  /* Insight image */
-  insightImg: {
-    marginHorizontal: 16, marginBottom: 12,
-    height: 120, borderRadius: 16,
-    backgroundColor: '#C8A020',
-    alignItems: 'center', justifyContent: 'center',
+  cardBody: {
+    flex: 1,
   },
-  insightImgEmoji: { fontSize: 48 },
 
-  /* Blockquote */
-  blockquote: {
-    borderLeftWidth: 3, borderLeftColor: '#9A9A8E', paddingLeft: 12,
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: C.dark,
+    marginBottom: 4,
   },
-  blockquoteText: { fontSize: 12, color: '#6A6A60', fontStyle: 'italic', lineHeight: 19 },
 
-  /* Load more */
-  loadMoreBtn: {
-    alignItems: 'center', justifyContent: 'center', paddingVertical: 16,
+  cardDate: {
+    fontSize: 11,
+    color: C.muted,
   },
-  loadMoreText: { fontSize: 13, fontWeight: '600', color: '#3A5A2A' },
 
-  /* FAB */
-  fab: {
-    position: 'absolute', bottom: 20, right: 16,
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: '#3A5A2A',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#3A5A2A', shadowOpacity: 0.4,
-    shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  noteText: {
+    fontSize: 13,
+    color: C.dark,
+    lineHeight: 18,
+    marginBottom: 4,
   },
-  fabEmoji: { fontSize: 22 },
+
+  // Journal
+  journalText: {
+    fontSize: 14,
+    color: C.dark,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+
+  journalEmpty: {
+    fontSize: 13,
+    color: C.muted,
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10,
+  },
+
+  tag: {
+    backgroundColor:
+      'rgba(168,197,160,0.25)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+
+  tagText: {
+    fontSize: 11,
+    color: C.sageD,
+    fontWeight: '500',
+  },
+
+  // Stats
+  statsWrap: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+
+  statsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: C.dark,
+    marginBottom: 16,
+  },
+
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 10,
+  },
+
+  statEmoji: {
+    fontSize: 22,
+    width: 32,
+  },
+
+  barTrack: {
+    flex: 1,
+    height: 10,
+    backgroundColor: C.surface,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+
+  barFill: {
+    height: '100%',
+    backgroundColor: C.sage,
+    borderRadius: 5,
+  },
+
+  statPct: {
+    fontSize: 13,
+    color: C.muted,
+    width: 36,
+    textAlign: 'right',
+  },
 });
