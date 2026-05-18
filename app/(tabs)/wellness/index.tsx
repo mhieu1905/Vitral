@@ -61,6 +61,7 @@ export default function WellnessScreen() {
   );
 
   // Loading khi đang lấy mood hôm nay
+  // Loading khi đang lấy mood hôm nay
   if (loadingToday) {
     return (
       <SafeAreaView

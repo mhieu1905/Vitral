@@ -7,6 +7,15 @@
  *   Save Entry  → router.back()
  */
 
+/**
+ * app/(tabs)/wellness/journal.tsx
+ * Screen S-50: Daily Journal
+ *
+ * Navigation:
+ *   ← back      → wellness-hub (hoặc index tùy entry point)
+ *   Save Entry  → router.back()
+ */
+
 import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -340,3 +349,4 @@ const s = StyleSheet.create({
     color: C.white,
   },
 });
+
