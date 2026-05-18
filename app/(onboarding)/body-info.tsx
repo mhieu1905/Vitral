@@ -12,10 +12,11 @@ import {
   PanResponder,
   LayoutChangeEvent,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useOnboardingStore } from "../../store/onboardingStore";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Gender = "Male" | "Female" | "Non-binary";
+type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 
 // ─── Custom Slider ─────────────────────────────────────────────────────────────
 interface SliderProps {
@@ -115,15 +116,41 @@ const sliderStyles = StyleSheet.create({
   },
 });
 
+const GENDER_OPTIONS: { label: string; value: Gender }[] = [
+  { label: "Male", value: "male" },
+  { label: "Female", value: "female" },
+  { label: "Other", value: "other" },
+];
+
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export default function AboutYourselfScreen() {
-  const [height, setHeight] = useState(175); // cm
-  const [weight, setWeight] = useState(68.5); // kg
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState<Gender>("Male");
   const router = useRouter();
+  
+  // Use global store
+  const { 
+    height, setHeight,
+    weight, setWeight,
+    age, setAge,
+    gender, setGender
+  } = useOnboardingStore();
+
+  // Initialize defaults if null
+  const currentHeight = height ?? 175;
+  const currentWeight = weight ?? 68.5;
+  const currentAge = age ? String(age) : "";
+  const currentGender = gender ?? "male";
 
   const handleContinue = () => {
+    // Save defaults to store if they were null and not changed by user
+    if (height === null) setHeight(currentHeight);
+    if (weight === null) setWeight(currentWeight);
+    if (gender === null) setGender(currentGender);
+    // Age must be entered
+    if (!age) {
+      alert("Please enter your age");
+      return;
+    }
+    
     router.push('/(onboarding)/activity-level');
   };
 
@@ -133,11 +160,7 @@ export default function AboutYourselfScreen() {
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={() => router.back()}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Digital Sanctuary</Text>
@@ -154,16 +177,10 @@ export default function AboutYourselfScreen() {
       </View>
 
       {/* ── Scroll Content ── */}
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Tell us about yourself</Text>
         <Text style={styles.subtitle}>
-          This information helps us personalize your wellness journey and set
-          accurate health targets.
+          This information helps us personalize your wellness journey and set accurate health targets.
         </Text>
 
         {/* ── Height Card ── */}
@@ -171,7 +188,7 @@ export default function AboutYourselfScreen() {
           <View style={styles.cardRow}>
             <Text style={styles.cardLabel}>Height</Text>
             <View style={styles.valueRow}>
-              <Text style={styles.valueNumber}>{height}</Text>
+              <Text style={styles.valueNumber}>{currentHeight}</Text>
               <Text style={styles.valueUnit}> cm</Text>
             </View>
           </View>
@@ -179,7 +196,7 @@ export default function AboutYourselfScreen() {
             min={100}
             max={250}
             step={1}
-            value={height}
+            value={currentHeight}
             onChange={setHeight}
           />
         </View>
@@ -189,7 +206,7 @@ export default function AboutYourselfScreen() {
           <View style={styles.cardRow}>
             <Text style={styles.cardLabel}>Weight</Text>
             <View style={styles.valueRow}>
-              <Text style={styles.valueNumber}>{weight.toFixed(1)}</Text>
+              <Text style={styles.valueNumber}>{currentWeight.toFixed(1)}</Text>
               <Text style={styles.valueUnit}> kg</Text>
             </View>
           </View>
@@ -197,7 +214,7 @@ export default function AboutYourselfScreen() {
             min={30}
             max={200}
             step={0.5}
-            value={weight}
+            value={currentWeight}
             onChange={setWeight}
           />
         </View>
@@ -211,8 +228,12 @@ export default function AboutYourselfScreen() {
               placeholder="28"
               placeholderTextColor="#BDB6AE"
               keyboardType="number-pad"
-              value={age}
-              onChangeText={(t) => setAge(t.replace(/[^0-9]/g, ""))}
+              value={currentAge}
+              onChangeText={(t) => {
+                const parsed = parseInt(t.replace(/[^0-9]/g, ""), 10);
+                if (!isNaN(parsed)) setAge(parsed);
+                else setAge(null as unknown as number);
+              }}
               maxLength={3}
             />
             <Text style={styles.calIcon}>📅</Text>
@@ -223,23 +244,15 @@ export default function AboutYourselfScreen() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Gender</Text>
           <View style={styles.genderRow}>
-            {(["Male", "Female", "Non-binary"] as Gender[]).map((g) => (
+            {GENDER_OPTIONS.map((g) => (
               <TouchableOpacity
-                key={g}
-                style={[
-                  styles.genderChip,
-                  gender === g && styles.genderChipSelected,
-                ]}
-                onPress={() => setGender(g)}
+                key={g.value}
+                style={[styles.genderChip, currentGender === g.value && styles.genderChipSelected]}
+                onPress={() => setGender(g.value)}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    gender === g && styles.genderChipTextSelected,
-                  ]}
-                >
-                  {g}
+                <Text style={[styles.genderChipText, currentGender === g.value && styles.genderChipTextSelected]}>
+                  {g.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -251,11 +264,7 @@ export default function AboutYourselfScreen() {
 
       {/* ── Footer Button ── */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.continueBtn}
-          onPress={handleContinue}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.85}>
           <Text style={styles.continueBtnText}>Continue →</Text>
         </TouchableOpacity>
       </View>
@@ -277,8 +286,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -303,8 +310,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
   },
-
-  // Progress
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -335,14 +340,10 @@ const styles = StyleSheet.create({
     backgroundColor: GREEN,
     borderRadius: 3,
   },
-
-  // Scroll
   scroll: {
     paddingHorizontal: 20,
     paddingTop: 22,
   },
-
-  // Title
   title: {
     fontSize: 26,
     fontWeight: "700",
@@ -357,8 +358,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 28,
   },
-
-  // Cards
   card: {
     backgroundColor: CARD_BG,
     borderRadius: 20,
@@ -393,8 +392,6 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     fontWeight: "400",
   },
-
-  // Age input
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -415,8 +412,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     opacity: 0.5,
   },
-
-  // Gender
   genderRow: {
     flexDirection: "row",
     gap: 10,
@@ -440,8 +435,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "600",
   },
-
-  // Footer
   footer: {
     position: "absolute",
     bottom: 0,

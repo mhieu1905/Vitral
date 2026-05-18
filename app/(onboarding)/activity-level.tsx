@@ -14,11 +14,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── ICONS (dùng @expo/vector-icons hoặc thay bằng SVG/Image) ───
-// Cài: npx expo install @expo/vector-icons
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useOnboardingStore } from '../../store/onboardingStore';
 
 // ─── TYPES ───────────────────────────────────────────────────────
-type ActivityKey = 'sedentary' | 'lightly' | 'active' | 'very_active';
+type ActivityKey = "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extra_active";
 
 interface ActivityOption {
   key: ActivityKey;
@@ -56,7 +56,7 @@ const ACTIVITIES: ActivityOption[] = [
     icon: <MaterialCommunityIcons name="sofa-single-outline" size={22} color="#C97E7E" />,
   },
   {
-    key: 'lightly',
+    key: 'lightly_active',
     label: 'Lightly Active',
     description: 'Occasional walking, light tasks',
     bgColor: '#F5F0E4',
@@ -64,8 +64,8 @@ const ACTIVITIES: ActivityOption[] = [
     icon: <FontAwesome5 name="walking" size={20} color="#A89060" />,
   },
   {
-    key: 'active',
-    label: 'Active',
+    key: 'moderately_active',
+    label: 'Moderately Active',
     description: 'Exercise 3–5 days a week',
     bgColor: '#F5E8E8',
     iconColor: '#C97E7E',
@@ -74,19 +74,29 @@ const ACTIVITIES: ActivityOption[] = [
   {
     key: 'very_active',
     label: 'Very Active',
-    description: 'Daily intense physical sport',
+    description: 'Daily intense physical sport or hard labor',
     bgColor: '#EEF2EC',
     iconColor: '#4A6741',
     icon: <MaterialCommunityIcons name="soccer" size={22} color="#4A6741" />,
+  },
+  {
+    key: 'extra_active',
+    label: 'Extra Active',
+    description: 'Very intense daily exercise or physical job',
+    bgColor: '#EAF0EF',
+    iconColor: '#5A8C85',
+    icon: <FontAwesome5 name="running" size={22} color="#5A8C85" />,
   },
 ];
 
 // ─── MAIN SCREEN ─────────────────────────────────────────────────
 export default function ActivityLevelScreen({ navigation }: any) {
-  const [selected, setSelected] = useState<ActivityKey>('active');
   const router = useRouter();
+  const { activityLevel, setActivityLevel } = useOnboardingStore();
+  const currentActivityLevel = activityLevel ?? 'moderately_active';
 
   const handleContinue = () => {
+    if (!activityLevel) setActivityLevel(currentActivityLevel);
     router.push('/(onboarding)/notifications');
   };
 
@@ -125,12 +135,12 @@ export default function ActivityLevelScreen({ navigation }: any) {
         {/* ── ACTIVITY OPTIONS ── */}
         <View style={styles.optionsList}>
           {ACTIVITIES.map((item) => {
-            const isSelected = selected === item.key;
+            const isSelected = currentActivityLevel === item.key;
             return (
               <TouchableOpacity
                 key={item.key}
                 style={[styles.card, isSelected && styles.cardSelected]}
-                onPress={() => setSelected(item.key)}
+                onPress={() => setActivityLevel(item.key)}
                 activeOpacity={0.8}
               >
                 {/* Icon bubble */}
@@ -155,40 +165,12 @@ export default function ActivityLevelScreen({ navigation }: any) {
           })}
         </View>
 
-        {/* ── QUOTE BANNER ──────────────────────────────────────────
-         *
-         *  HƯỚNG DẪN XỬ LÝ HÌNH ẢNH:
-         *  ─────────────────────────────────────────────────────────
-         *  1. Lưu ảnh nền vào thư mục: assets/images/sanctuary-banner.jpg
-         *
-         *  2. Import ở đầu file:
-         *       const bannerImage = require('../assets/images/sanctuary-banner.jpg');
-         *
-         *  3. Thay thế prop `source` bên dưới:
-         *       source={bannerImage}
-         *
-         *  4. Ảnh trong thiết kế là ảnh rừng/thiên nhiên có hiệu ứng tối (overlay).
-         *     Overlay màu xanh đậm (rgba(30,50,30,0.55)) đã được áp dụng bên trong
-         *     ImageBackground để giúp chữ luôn dễ đọc dù ảnh thay đổi.
-         *
-         *  5. Nếu dùng ảnh từ URL (Expo):
-         *       source={{ uri: 'https://your-cdn.com/banner.jpg' }}
-         *
-         *  ─────────────────────────────────────────────────────────
-         *  Với Expo, cách tốt nhất:
-         *    • Ảnh local  → require('../assets/images/...')
-         *    • Ảnh remote → { uri: 'https://...' }
-         *    • Đặt resizeMode="cover" để ảnh fill đầy banner
-         * ─────────────────────────────────────────────────────────
-         */}
         <ImageBackground
-          // ↓ THAY DÒNG NÀY bằng require('../assets/images/sanctuary-banner.jpg')
           source={{ uri: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800' }}
           style={styles.banner}
           imageStyle={styles.bannerImage}
           resizeMode="cover"
         >
-          {/* Dark overlay để chữ dễ đọc */}
           <View style={styles.bannerOverlay} />
           <Text style={styles.bannerQuote}>
             "Movement is a form of self-care.{'\n'}

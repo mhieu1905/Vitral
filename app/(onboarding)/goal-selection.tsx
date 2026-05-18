@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -8,17 +8,20 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useOnboardingStore } from "../../store/onboardingStore";
+import { onboardingApi } from "../../services/onboardingApi";
+import { supabase } from "../../utils/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type GoalId =
   | "lose_weight"
+  | "maintain_weight"
+  | "gain_weight"
   | "build_muscle"
-  | "reduce_stress"
-  | "better_sleep"
-  | "mindful_focus"
-  | "emotional_balance";
+  | "improve_fitness";
 
 interface Goal {
   id: GoalId;
@@ -48,36 +51,28 @@ const GOALS: Goal[] = [
     iconColor: "#B05060",
   },
   {
-    id: "reduce_stress",
-    title: "Reduce stress",
-    description: "Focus on finding calm and anxiety reduction.",
+    id: "maintain_weight",
+    title: "Maintain weight",
+    description: "Keep your current weight while focusing on overall health.",
     icon: "≋",
     iconBg: "#EAF0EF",
     iconColor: "#5A8C85",
   },
   {
-    id: "better_sleep",
-    title: "Better sleep",
-    description: "Prioritize deep and restorative rest nightly.",
+    id: "gain_weight",
+    title: "Gain weight",
+    description: "Build mass and focus on a calorie surplus safely.",
     icon: "☽",
     iconBg: "#EAF0EF",
     iconColor: "#4A7A6A",
   },
   {
-    id: "mindful_focus",
-    title: "Mindful focus",
-    description: "Enhance concentration and daily presence.",
+    id: "improve_fitness",
+    title: "Improve fitness",
+    description: "Enhance cardiovascular health and daily presence.",
     icon: "⊙",
     iconBg: "#F5E6E8",
     iconColor: "#B05060",
-  },
-  {
-    id: "emotional_balance",
-    title: "Emotional balance",
-    description: "Focus on mood tracking and inner stability.",
-    icon: "♥",
-    iconBg: "#EDE8DC",
-    iconColor: "#7A6A3A",
   },
 ];
 
@@ -94,13 +89,11 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, selected, onPress }) => (
     onPress={onPress}
     activeOpacity={0.85}
   >
-    {/* Check badge (top-right when selected) */}
     {selected && (
       <View style={styles.checkBadge}>
         <Text style={styles.checkMark}>✓</Text>
       </View>
     )}
-
     <View style={[styles.iconCircle, { backgroundColor: goal.iconBg }]}>
       <Text style={[styles.iconText, { color: goal.iconColor }]}>
         {goal.icon}
@@ -113,44 +106,70 @@ const GoalCard: React.FC<GoalCardProps> = ({ goal, selected, onPress }) => (
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 export default function GoalSettingScreen() {
-  const [selected, setSelected] = useState<Set<GoalId>>(new Set());
   const router = useRouter();
+  const { goal, setGoal, setAll, setIsProfileExists } = useOnboardingStore();
+  const [loading, setLoading] = useState(true);
 
-  const toggleGoal = (id: GoalId) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
+  useEffect(() => {
+    async function loadExistingProfile() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const profile = await onboardingApi.getProfile(user.id);
+          if (profile) {
+            setIsProfileExists(true);
+            setAll({
+              goal: profile.goal,
+              height: profile.height_cm,
+              weight: profile.weight_kg,
+              age: profile.age,
+              gender: profile.gender,
+              activityLevel: profile.activity_level,
+              notificationEnabled: profile.notification_enabled,
+              reminderTime: profile.reminder_time,
+            });
+          }
+        }
+      } catch (err) {
+        console.log("No existing profile found or error fetching:", err);
+      } finally {
+        setLoading(false);
       }
-      return next;
-    });
+    }
+    loadExistingProfile();
+  }, [setAll, setIsProfileExists]);
+
+  const handleSelectGoal = (id: GoalId) => {
+    setGoal(id);
   };
 
   const handleContinue = () => {
-    if (selected.size === 0) return;
+    if (!goal) return;
     router.push("/(onboarding)/body-info");
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#C4798A" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF7F5" />
 
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={() => router.back()}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Digital Sanctuary</Text>
         <View style={styles.backBtn} />
       </View>
 
-      {/* ── Progress Bar ── */}
+      {/* Progress */}
       <View style={styles.progressRow}>
         <Text style={styles.progressLabel}>STEP 1 OF 4</Text>
         <Text style={styles.progressStep}>Goal Setting</Text>
@@ -159,39 +178,28 @@ export default function GoalSettingScreen() {
         <View style={styles.progressFill} />
       </View>
 
-      {/* ── Scrollable Content ── */}
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Title */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>What is your main{"\n"}goal?</Text>
-        <Text style={styles.subtitle}>
-          Select the path that resonates most with your journey today.
-        </Text>
+        <Text style={styles.subtitle}>Select the path that resonates most with your journey today.</Text>
 
-        {/* Goal Cards — multi-select */}
-        {GOALS.map((goal) => (
+        {GOALS.map((g) => (
           <GoalCard
-            key={goal.id}
-            goal={goal}
-            selected={selected.has(goal.id)}
-            onPress={() => toggleGoal(goal.id)}
+            key={g.id}
+            goal={g}
+            selected={goal === g.id}
+            onPress={() => handleSelectGoal(g.id)}
           />
         ))}
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── Continue Button (fixed) ── */}
+      {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[
-            styles.continueBtn,
-            selected.size === 0 && styles.continueBtnDisabled,
-          ]}
+          style={[styles.continueBtn, !goal && styles.continueBtnDisabled]}
           onPress={handleContinue}
-          activeOpacity={selected.size > 0 ? 0.85 : 1}
+          activeOpacity={goal ? 0.85 : 1}
         >
           <Text style={styles.continueBtnText}>Continue →</Text>
         </TouchableOpacity>
@@ -215,8 +223,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -241,8 +247,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
   },
-
-  // Progress
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -274,14 +278,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A6741",
     borderRadius: 2,
   },
-
-  // Scroll
   scroll: {
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-
-  // Title
   title: {
     fontSize: 28,
     fontWeight: "700",
@@ -299,8 +299,6 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     paddingHorizontal: 12,
   },
-
-  // Cards
   card: {
     backgroundColor: CARD_BG,
     borderRadius: 20,
@@ -346,8 +344,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     paddingHorizontal: 8,
   },
-
-  // Check badge
   checkBadge: {
     position: "absolute",
     top: 14,
@@ -365,8 +361,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 14,
   },
-
-  // Footer
   footer: {
     position: "absolute",
     bottom: 0,
