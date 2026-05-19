@@ -4,7 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import onboarding router
 from backend.routes.onboarding import router as onboarding_router
 
+from backend.routes.stress import router as stress_router
+
 app = FastAPI()
+
 
 # CORS configuration
 app.add_middleware(
@@ -17,6 +20,7 @@ app.add_middleware(
 
 # Include onboarding routes
 app.include_router(onboarding_router)
+app.include_router(stress_router)
 
 @app.get("/")
 def read_root():
