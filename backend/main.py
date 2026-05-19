@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+# Đọc .env.local từ thư mục gốc (D:\Vitral\.env.local)
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env.local'))
 
-# Import onboarding router
-from backend.routes.onboarding import router as onboarding_router
+from routers import activities, summary
 
-app = FastAPI()
+app = FastAPI(title="VitalTrack API")
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,13 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include onboarding routes
-app.include_router(onboarding_router)
+app.include_router(activities.router, prefix="/api/activities", tags=["Activities"])
+app.include_router(summary.router, prefix="/api/summary", tags=["Summary"])
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to Vitral API"}
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+def root():
+    return {"message": "VitalTrack API đang chạy!"}
