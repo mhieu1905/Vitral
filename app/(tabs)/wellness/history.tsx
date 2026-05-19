@@ -1,4 +1,5 @@
 import BottomNav from '@/components/bottom-nav';
+
 import {
   useFocusEffect,
   useRouter,
@@ -11,7 +12,9 @@ import React, {
 
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,8 +29,9 @@ import {
   MoodLog,
   MoodStats,
 } from '../../../utils/moodService';
-//..
+
 import {
+  deleteJournalEntry,
   getJournalHistory,
   JournalEntry,
 } from '../../../utils/journalService';
@@ -58,20 +62,29 @@ function buildFeed(
   moods: MoodLog[],
   journals: JournalEntry[]
 ): FeedItem[] {
-  const moodItems: FeedItem[] = moods.map((d) => ({
-    kind: 'mood',
-    data: d,
-  }));
+  const moodItems: FeedItem[] =
+    moods.map((d) => ({
+      kind: 'mood',
+      data: d,
+    }));
 
-  const journalItems: FeedItem[] = journals.map((d) => ({
-    kind: 'journal',
-    data: d,
-  }));
+  const journalItems: FeedItem[] =
+    journals.map((d) => ({
+      kind: 'journal',
+      data: d,
+    }));
 
-  return [...moodItems, ...journalItems].sort(
+  return [
+    ...moodItems,
+    ...journalItems,
+  ].sort(
     (a, b) =>
-      new Date(b.data.logged_at).getTime() -
-      new Date(a.data.logged_at).getTime()
+      new Date(
+        b.data.logged_at
+      ).getTime() -
+      new Date(
+        a.data.logged_at
+      ).getTime()
   );
 }
 
@@ -83,7 +96,9 @@ function MoodCard({
 }: {
   item: MoodLog;
 }) {
-  const date = new Date(item.logged_at);
+  const date = new Date(
+    item.logged_at
+  );
 
   return (
     <View style={s.card}>
@@ -154,30 +169,47 @@ function MoodCard({
 // ─────────────────────────────────────────────────────
 function JournalCard({
   item,
+  onDelete,
 }: {
   item: JournalEntry;
+  onDelete: (id: string) => void;
 }) {
-  const date = new Date(item.logged_at);
+  const date = new Date(
+    item.logged_at
+  );
 
   return (
     <View style={s.card}>
-      <View
-        style={[
-          s.kindBadge,
-          {
-            backgroundColor:
-              'rgba(245,196,196,0.35)',
-          },
-        ]}
-      >
-        <Text
+      <View style={s.cardTop}>
+        <View
           style={[
-            s.kindText,
-            { color: C.roseD },
+            s.kindBadge,
+            {
+              backgroundColor:
+                'rgba(245,196,196,0.35)',
+            },
           ]}
         >
-          Journal
-        </Text>
+          <Text
+            style={[
+              s.kindText,
+              { color: C.roseD },
+            ]}
+          >
+            Journal
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={() =>
+            onDelete(item.id)
+          }
+          activeOpacity={0.7}
+        >
+          <Text style={s.deleteText}>
+            Delete
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={s.cardRow}>
@@ -194,7 +226,9 @@ function JournalCard({
               {item.content}
             </Text>
           ) : (
-            <Text style={s.journalEmpty}>
+            <Text
+              style={s.journalEmpty}
+            >
               No content
             </Text>
           )}
@@ -222,13 +256,20 @@ function JournalCard({
 
       {item.tags?.length > 0 && (
         <View style={s.tagsRow}>
-          {item.tags.map((tag, i) => (
-            <View key={i} style={s.tag}>
-              <Text style={s.tagText}>
-                {tag}
-              </Text>
-            </View>
-          ))}
+          {item.tags.map(
+            (tag, i) => (
+              <View
+                key={i}
+                style={s.tag}
+              >
+                <Text
+                  style={s.tagText}
+                >
+                  {tag}
+                </Text>
+              </View>
+            )
+          )}
         </View>
       )}
     </View>
@@ -287,26 +328,115 @@ export default function MoodHistoryScreen() {
   >('feed');
 
   // ───────────────────────────────────────────────────
+  // Delete Journal
+  // ───────────────────────────────────────────────────
+  const handleDeleteJournal =
+    async (id: string) => {
+      // WEB
+      if (Platform.OS === 'web') {
+        try {
+          const confirmed =
+            window.confirm(
+              'Bạn có chắc muốn xóa journal này?'
+            );
+
+          if (!confirmed) return;
+
+          await deleteJournalEntry(
+            id
+          );
+
+          setFeed((prev) =>
+            prev.filter(
+              (item) =>
+                !(
+                  item.kind ===
+                    'journal' &&
+                  item.data.id === id
+                )
+            )
+          );
+        } catch (err: any) {
+          alert(
+            err.message ??
+              'Không thể xóa journal'
+          );
+        }
+
+        return;
+      }
+
+      // MOBILE
+      Alert.alert(
+        'Xóa nhật ký',
+        'Bạn có chắc muốn xóa journal này?',
+        [
+          {
+            text: 'Hủy',
+            style: 'cancel',
+          },
+          {
+            text: 'Xóa',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteJournalEntry(
+                  id
+                );
+
+                setFeed((prev) =>
+                  prev.filter(
+                    (item) =>
+                      !(
+                        item.kind ===
+                          'journal' &&
+                        item.data.id ===
+                          id
+                      )
+                  )
+                );
+              } catch (err: any) {
+                Alert.alert(
+                  'Lỗi',
+                  err.message ??
+                    'Không thể xóa journal'
+                );
+              }
+            },
+          },
+        ]
+      );
+    };
+
+  // ───────────────────────────────────────────────────
   // Load Data
   // ───────────────────────────────────────────────────
   const loadData = async () => {
     try {
       setLoading(true);
 
-      const [moods, journals, st] =
-        await Promise.all([
-          getMoodHistory(30),
-          getJournalHistory(30),
-          getMoodStats(),
-        ]);
+      const [
+        moods,
+        journals,
+        st,
+      ] = await Promise.all([
+        getMoodHistory(30),
+        getJournalHistory(30),
+        getMoodStats(),
+      ]);
 
       setFeed(
-        buildFeed(moods, journals)
+        buildFeed(
+          moods,
+          journals
+        )
       );
 
       setStats(st);
     } catch (err: any) {
-      console.error(err.message);
+      console.error(
+        err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -331,11 +461,18 @@ export default function MoodHistoryScreen() {
   }) =>
     item.kind === 'mood' ? (
       <MoodCard
-        item={item.data as MoodLog}
+        item={
+          item.data as MoodLog
+        }
       />
     ) : (
       <JournalCard
-        item={item.data as JournalEntry}
+        item={
+          item.data as JournalEntry
+        }
+        onDelete={
+          handleDeleteJournal
+        }
       />
     );
 
@@ -345,7 +482,9 @@ export default function MoodHistoryScreen() {
       <View style={s.header}>
         <TouchableOpacity
           style={s.backBtn}
-          onPress={() => router.back()}
+          onPress={() =>
+            router.back()
+          }
         >
           <Text style={s.backArrow}>
             ←
@@ -356,7 +495,9 @@ export default function MoodHistoryScreen() {
           My History
         </Text>
 
-        <View style={{ width: 34 }} />
+        <View
+          style={{ width: 34 }}
+        />
       </View>
 
       {/* Tabs */}
@@ -407,7 +548,9 @@ export default function MoodHistoryScreen() {
       {/* Content */}
       {loading ? (
         <ActivityIndicator
-          style={{ marginTop: 40 }}
+          style={{
+            marginTop: 40,
+          }}
           color={C.sage}
         />
       ) : tab === 'feed' ? (
@@ -417,7 +560,9 @@ export default function MoodHistoryScreen() {
             item.data.id
           }
           renderItem={renderItem}
-          contentContainerStyle={s.list}
+          contentContainerStyle={
+            s.list
+          }
           ListEmptyComponent={
             <Text style={s.empty}>
               Chưa có dữ liệu nào.
@@ -426,15 +571,19 @@ export default function MoodHistoryScreen() {
         />
       ) : (
         <View style={s.statsWrap}>
-          <Text style={s.statsTitle}>
+          <Text
+            style={s.statsTitle}
+          >
             Mood 7 ngày gần nhất
           </Text>
 
           {stats.every(
-            (s) => s.count === 0
+            (s) =>
+              s.count === 0
           ) ? (
             <Text style={s.empty}>
-              Chưa có dữ liệu thống kê.
+              Chưa có dữ liệu
+              thống kê.
             </Text>
           ) : (
             stats.map((st, i) => (
@@ -464,7 +613,8 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 8,
@@ -501,11 +651,13 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor:
+      'transparent',
   },
 
   tabActive: {
-    borderBottomColor: C.sageD,
+    borderBottomColor:
+      C.sageD,
   },
 
   tabText: {
@@ -531,12 +683,24 @@ const s = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Cards
   card: {
     backgroundColor: C.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
+  },
+
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent:
+      'space-between',
+    alignItems: 'center',
+  },
+
+  deleteText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#D9534F',
   },
 
   kindBadge: {
@@ -586,7 +750,6 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
 
-  // Journal
   journalText: {
     fontSize: 14,
     color: C.dark,
@@ -622,7 +785,6 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Stats
   statsWrap: {
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -650,7 +812,8 @@ const s = StyleSheet.create({
   barTrack: {
     flex: 1,
     height: 10,
-    backgroundColor: C.surface,
+    backgroundColor:
+      C.surface,
     borderRadius: 5,
     overflow: 'hidden',
   },

@@ -1,401 +1,657 @@
+/**
+ * app/(tabs)/wellness/stress.tsx
+ * Stress Tracking — log, history, trend analysis
+ *
+ * Calls Python backend:
+ *   POST /stress/log
+ *   GET  /stress/history
+ *   GET  /stress/stats
+ */
+
 import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../../utils/supabase';
 
-type TabType = 'list' | 'calendar';
+// ─── Config ───────────────────────────────────────────────────────────────────
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
+const { width: SW } = Dimensions.get('window');
 
-const ENTRIES = [
-  {
-    id: '1',
-    type: 'reflection',
-    badge: 'REFLECTION',
-    badgeStyle: 'reflection',
-    date: 'October 24, 2023',
-    title: 'Quiet morning at the coastal path.',
-    body: 'Today I felt an immense sense of clarity. The fog was rolling in over the cliffs and it felt like the world was holding its breath. I realized that my anxiety often stems from trying to see too far ahead.',
-    mood: { emoji: '☀️', label: 'Calm & Bright' },
-    hasImage: true,
-    imageEmoji: '🌿',
-    imageBg: ['#6A8A6A', '#8AAA7A'],
-    tags: [],
-    rightEmoji: '',
-  },
-  {
-    id: '2',
-    type: 'mood',
-    badge: '',
-    badgeStyle: '',
-    date: 'October 22, 2023',
-    title: 'Feeling a bit overwhelmed with work projects.',
-    body: 'Tried a 10-minute box breathing exercise during lunch. It helped, but the pressure is still there. Need to prioritize sleep tonight.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '',
-    imageBg: [],
-    tags: [],
-    rightEmoji: '🌧️',
-    avatars: ['🌿', '🌱'],
-    avatarExtra: 2,
-  },
-  {
-    id: '3',
-    type: 'nature',
-    badge: '',
-    badgeStyle: 'highlighted',
-    date: 'October 21, 2023',
-    title: 'The garden is finally starting to bloom.',
-    body: 'Grateful for the small things. The lavender smells amazing. Spent 30 minutes just sitting on the bench watching the bees.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '',
-    imageBg: [],
-    tags: ['#GRATEFUL', '#NATURE'],
-    rightEmoji: '🌿',
-  },
-  {
-    id: '4',
-    type: 'plain',
-    badge: '',
-    badgeStyle: 'plain',
-    date: 'October 19, 2023',
-    title: 'The beauty of doing nothing.',
-    body: 'Decided to leave my phone in another room for the entire afternoon. The silence was uncomfortable at first, then liberating.',
-    mood: null,
-    hasImage: false,
-    imageEmoji: '🌅',
-    imageBg: ['#8B6914', '#C8A020'],
-    tags: [],
-    rightEmoji: '',
-    quote: '"In the midst of movement and chaos, keep stillness inside of you"',
-  },
+// ─── Colors ───────────────────────────────────────────────────────────────────
+const C = {
+  bg:      '#F5F4F0',
+  white:   '#FFFFFF',
+  surface: '#EDEAE4',
+  dark:    '#2C2C2A',
+  muted:   '#888780',
+  hint:    '#B4B2A9',
+  sage:    '#8FAE88',
+  sageL:   '#D4E8C2',
+  sageD:   '#3B6D11',
+  amber:   '#F2B84B',
+  amberL:  '#FEF3D7',
+  rose:    '#E07A7A',
+  roseL:   '#FAE8E8',
+  blue:    '#6B9EC4',
+  blueL:   '#D6EAF5',
+};
+
+// Màu theo mức stress 1-10
+function levelColor(lvl: number): string {
+  if (lvl <= 3) return C.sage;
+  if (lvl <= 6) return C.amber;
+  return C.rose;
+}
+function levelLabel(lvl: number): string {
+  if (lvl <= 2) return 'Very Calm';
+  if (lvl <= 4) return 'Relaxed';
+  if (lvl <= 6) return 'Moderate';
+  if (lvl <= 8) return 'Stressed';
+  return 'Very High';
+}
+function levelEmoji(lvl: number): string {
+  if (lvl <= 2) return '😌';
+  if (lvl <= 4) return '🙂';
+  if (lvl <= 6) return '😐';
+  if (lvl <= 8) return '😰';
+  return '😫';
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface StressLog {
+  id: string;
+  stress_level: number;
+  note: string;
+  triggers: string[];
+  logged_at: string;
+}
+
+interface TrendPoint {
+  date: string;
+  avg_level: number;
+  count: number;
+}
+
+interface StressStats {
+  avg_7days: number;
+  avg_30days: number;
+  highest: number;
+  lowest: number;
+  total_logs: number;
+  trend: TrendPoint[];
+}
+
+// ─── API helper ───────────────────────────────────────────────────────────────
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token ?? '';
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+async function apiPost(path: string, body: object) {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? 'Request failed');
+  }
+  return res.json();
+}
+
+async function apiGet(path: string) {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? 'Request failed');
+  }
+  return res.json();
+}
+
+// ─── Trigger chips ────────────────────────────────────────────────────────────
+const TRIGGER_OPTIONS = [
+  'Work', 'Sleep', 'Health', 'Relationship',
+  'Finance', 'Family', 'Social', 'Other',
 ];
 
-export default function HistoryScreen() {
-  const router = useRouter();
-  const [tab, setTab] = useState<TabType>('list');
-  const [search, setSearch] = useState('');
+// ─── Mini bar chart ───────────────────────────────────────────────────────────
+function TrendChart({ trend }: { trend: TrendPoint[] }) {
+  if (!trend.length) return null;
 
-  const filtered = ENTRIES.filter(
-    (e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.body.toLowerCase().includes(search.toLowerCase())
-  );
+  const max = Math.max(...trend.map(t => t.avg_level), 1);
+  const chartH = 80;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.menuBtn}>
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>The Sanctuary</Text>
-        <View style={styles.avatarSm}>
-          <Text style={styles.avatarEmoji}>🧑‍💼</Text>
-        </View>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>History</Text>
-          <Text style={styles.heroSub}>Revisit your emotional landscape.</Text>
-        </View>
-
-        {/* Search */}
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search thoughts..."
-            placeholderTextColor="#9A9A8E"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'list' && styles.tabBtnActive]}
-            onPress={() => setTab('list')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'list' && styles.tabBtnTextActive]}>
-              ☰ List View
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === 'calendar' && styles.tabBtnActive]}
-            onPress={() => setTab('calendar')}
-          >
-            <Text style={[styles.tabBtnText, tab === 'calendar' && styles.tabBtnTextActive]}>
-              📅 Calendar
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Entry 1: Reflection with image ── */}
-        <View style={styles.card}>
-          <View style={styles.entryMeta}>
-            <View style={[styles.badge, styles.badgeReflection]}>
-              <Text style={[styles.badgeText, styles.badgeTextReflection]}>REFLECTION</Text>
+    <View style={tc.wrap}>
+      {trend.map((t, i) => {
+        const barH = Math.max((t.avg_level / max) * chartH, 6);
+        const color = levelColor(Math.round(t.avg_level));
+        const dayLabel = new Date(t.date + 'T00:00:00')
+          .toLocaleDateString('en', { weekday: 'short' });
+        return (
+          <View key={i} style={tc.col}>
+            <Text style={tc.val}>{t.avg_level.toFixed(1)}</Text>
+            <View style={[tc.track, { height: chartH }]}>
+              <View style={[tc.bar, { height: barH, backgroundColor: color }]} />
             </View>
-            <Text style={styles.entryDate}>October 24, 2023</Text>
+            <Text style={tc.day}>{dayLabel}</Text>
           </View>
-          <Text style={styles.entryTitle}>Quiet morning at the coastal path.</Text>
-          <Text style={styles.entryBody}>
-            Today I felt an immense sense of clarity. The fog was rolling in over the cliffs
-            and it felt like the world was holding its breath. I realized that my anxiety often
-            stems from trying to see too far ahead.
-          </Text>
-          <View style={styles.moodPill}>
-            <Text style={styles.moodEmoji}>☀️</Text>
-            <Text style={styles.moodLabel}>Calm & Bright</Text>
-          </View>
-          {/* Image placeholder */}
-          <View style={[styles.entryImg, { backgroundColor: '#7A9A7A' }]}>
-            <Text style={styles.entryImgEmoji}>🌿</Text>
-          </View>
-        </View>
+        );
+      })}
+    </View>
+  );
+}
+const tc = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingTop: 4 },
+  col:  { flex: 1, alignItems: 'center', gap: 4 },
+  track:{ width: '100%', justifyContent: 'flex-end', borderRadius: 6, backgroundColor: C.surface },
+  bar:  { width: '100%', borderRadius: 6 },
+  val:  { fontSize: 9, color: C.muted, fontWeight: '600' },
+  day:  { fontSize: 9, color: C.hint },
+});
 
-        {/* ── Weekly Rhythm Card ── */}
-        <View style={styles.rhythmCard}>
-          <Text style={styles.rhythmIcon}>📈</Text>
-          <Text style={styles.rhythmTitle}>Weekly Rhythm</Text>
-          <Text style={styles.rhythmDesc}>
-            You've reached a state of "Flow" 4 times this week. Morning entries show 20%
-            higher calmness scores.
+// ─── History item ─────────────────────────────────────────────────────────────
+function HistoryItem({ item }: { item: StressLog }) {
+  const d = new Date(item.logged_at);
+  const color = levelColor(item.stress_level);
+  return (
+    <View style={hi.card}>
+      <View style={[hi.badge, { backgroundColor: color + '22' }]}>
+        <Text style={[hi.badgeNum, { color }]}>{item.stress_level}</Text>
+        <Text style={hi.badgeLabel}>{levelEmoji(item.stress_level)}</Text>
+      </View>
+      <View style={hi.body}>
+        <View style={hi.topRow}>
+          <Text style={[hi.levelText, { color }]}>{levelLabel(item.stress_level)}</Text>
+          <Text style={hi.time}>
+            {d.toLocaleDateString('en', { month: 'short', day: '2-digit' })}
+            {' · '}
+            {d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
           </Text>
-          <Text style={styles.rhythmGoalLbl}>CONSISTENCY GOAL · 75%</Text>
-          <View style={styles.rhythmBarWrap}>
-            <View style={[styles.rhythmBar, { width: '75%' }]} />
-          </View>
         </View>
-
-        {/* ── Entry 2: Overwhelmed ── */}
-        <View style={styles.card}>
-          <View style={styles.entryMeta}>
-            <Text style={styles.entryDate}>October 22, 2023</Text>
-            <Text style={[styles.entryDate, { marginLeft: 'auto', fontSize: 18 }]}>🌧️</Text>
-          </View>
-          <Text style={styles.entryTitle}>Feeling a bit overwhelmed with work projects.</Text>
-          <Text style={styles.entryBody}>
-            Tried a 10-minute box breathing exercise during lunch. It helped, but the pressure
-            is still there. Need to prioritize sleep tonight.
-          </Text>
-          <View style={styles.avatarCluster}>
-            {['🌿', '🌱'].map((av, i) => (
-              <View key={i} style={[styles.av, { marginLeft: i === 0 ? 0 : -6 }]}>
-                <Text style={{ fontSize: 12 }}>{av}</Text>
+        {item.note ? (
+          <Text style={hi.note} numberOfLines={2}>{item.note}</Text>
+        ) : null}
+        {item.triggers?.length > 0 && (
+          <View style={hi.tags}>
+            {item.triggers.map((t, i) => (
+              <View key={i} style={hi.tag}>
+                <Text style={hi.tagText}>{t}</Text>
               </View>
             ))}
-            <Text style={styles.avExtra}>+2</Text>
           </View>
+        )}
+      </View>
+    </View>
+  );
+}
+const hi = StyleSheet.create({
+  card:      { backgroundColor: C.white, borderRadius: 16, padding: 14, marginBottom: 10, flexDirection: 'row', gap: 12 },
+  badge:     { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  badgeNum:  { fontSize: 18, fontWeight: '700' },
+  badgeLabel:{ fontSize: 16 },
+  body:      { flex: 1 },
+  topRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  levelText: { fontSize: 13, fontWeight: '600' },
+  time:      { fontSize: 10, color: C.hint },
+  note:      { fontSize: 12, color: C.muted, lineHeight: 18, marginBottom: 6 },
+  tags:      { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  tag:       { backgroundColor: C.surface, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  tagText:   { fontSize: 10, color: C.muted },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+type Tab = 'log' | 'history' | 'stats';
+
+export default function StressScreen() {
+  const router = useRouter();
+
+  // ── Tab ──
+  const [tab, setTab] = useState<Tab>('log');
+
+  // ── Log form ──
+  const [level,    setLevel]    = useState(5);
+  const [note,     setNote]     = useState('');
+  const [triggers, setTriggers] = useState<string[]>([]);
+  const [saving,   setSaving]   = useState(false);
+
+  // ── Data ──
+  const [history,  setHistory]  = useState<StressLog[]>([]);
+  const [stats,    setStats]    = useState<StressStats | null>(null);
+  const [loading,  setLoading]  = useState(false);
+
+  // ── Slider animation ──
+  const sliderAnim = useRef(new Animated.Value(level)).current;
+
+  const animateLevel = (val: number) => {
+    setLevel(val);
+    Animated.spring(sliderAnim, {
+      toValue: val,
+      friction: 5,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // Fetch khi chuyển tab
+  useEffect(() => {
+    if (tab === 'history') fetchHistory();
+    if (tab === 'stats')   fetchStats();
+  }, [tab]);
+
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet('/stress/history?limit=30');
+      setHistory(data);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet('/stress/stats');
+      setStats(data);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await apiPost('/stress/log', {
+        stress_level: level,
+        note:         note.trim(),
+        triggers,
+      });
+      // reset
+      setNote('');
+      setTriggers([]);
+      animateLevel(5);
+      Alert.alert('✓ Saved', 'Stress log recorded!');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleTrigger = (t: string) =>
+    setTriggers(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
+
+  const color = levelColor(level);
+
+  // ── Step buttons for level (1-10) ──
+  const LevelPicker = () => (
+    <View style={s.levelWrap}>
+      {/* Big display */}
+      <View style={[s.levelCircle, { borderColor: color, backgroundColor: color + '18' }]}>
+        <Text style={s.levelEmoji}>{levelEmoji(level)}</Text>
+        <Text style={[s.levelNum, { color }]}>{level}</Text>
+        <Text style={[s.levelTag, { color }]}>{levelLabel(level)}</Text>
+      </View>
+
+      {/* 1-10 buttons */}
+      <View style={s.levelGrid}>
+        {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
+          const active = n === level;
+          const c = levelColor(n);
+          return (
+            <TouchableOpacity
+              key={n}
+              style={[s.levelBtn, active && { backgroundColor: c, borderColor: c }]}
+              onPress={() => animateLevel(n)}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.levelBtnText, active && { color: C.white }]}>{n}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  // ── LOG tab ───────────────────────────────────────────────────────────────
+  const LogTab = () => (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={s.tabContent}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Text style={s.sectionTitle}>How stressed are you?</Text>
+      <LevelPicker />
+
+      {/* Note */}
+      <Text style={s.sectionTitle}>What's on your mind?</Text>
+      <TextInput
+        style={s.noteInput}
+        placeholder="Write what's causing stress..."
+        placeholderTextColor={C.hint}
+        multiline
+        value={note}
+        onChangeText={setNote}
+        textAlignVertical="top"
+        selectionColor={C.sage}
+      />
+
+      {/* Triggers */}
+      <Text style={s.sectionTitle}>Triggers</Text>
+      <View style={s.triggerGrid}>
+        {TRIGGER_OPTIONS.map(t => {
+          const sel = triggers.includes(t);
+          return (
+            <TouchableOpacity
+              key={t}
+              style={[s.triggerChip, sel && { backgroundColor: C.sage, borderColor: C.sage }]}
+              onPress={() => toggleTrigger(t)}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.triggerText, sel && { color: C.white }]}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Save */}
+      <TouchableOpacity
+        style={[s.saveBtn, { backgroundColor: color }, saving && { opacity: 0.6 }]}
+        onPress={handleSave}
+        disabled={saving}
+        activeOpacity={0.85}
+      >
+        {saving
+          ? <ActivityIndicator color={C.white} />
+          : <Text style={s.saveBtnText}>Save Stress Log</Text>
+        }
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  // ── HISTORY tab ───────────────────────────────────────────────────────────
+  const HistoryTab = () => (
+    loading
+      ? <ActivityIndicator style={{ marginTop: 48 }} color={C.sage} />
+      : history.length === 0
+        ? <Text style={s.empty}>No stress logs yet.</Text>
+        : <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={s.tabContent}
+          >
+            {history.map(item => <HistoryItem key={item.id} item={item} />)}
+          </ScrollView>
+  );
+
+  // ── STATS tab ─────────────────────────────────────────────────────────────
+  const StatsTab = () => {
+    if (loading) return <ActivityIndicator style={{ marginTop: 48 }} color={C.sage} />;
+    if (!stats || stats.total_logs === 0)
+      return <Text style={s.empty}>Log some stress first.</Text>;
+
+    const cards = [
+      { label: '7-day avg',  value: stats.avg_7days.toFixed(1),  color: levelColor(Math.round(stats.avg_7days)),  bg: levelColor(Math.round(stats.avg_7days)) + '18' },
+      { label: '30-day avg', value: stats.avg_30days.toFixed(1), color: levelColor(Math.round(stats.avg_30days)), bg: levelColor(Math.round(stats.avg_30days)) + '18' },
+      { label: 'Highest',    value: stats.highest.toString(),    color: C.rose,  bg: C.roseL  },
+      { label: 'Lowest',     value: stats.lowest.toString(),     color: C.sageD, bg: C.sageL  },
+    ];
+
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.tabContent}
+      >
+        {/* Stat cards */}
+        <View style={s.statGrid}>
+          {cards.map((c, i) => (
+            <View key={i} style={[s.statCard, { backgroundColor: c.bg }]}>
+              <Text style={[s.statNum, { color: c.color }]}>{c.value}</Text>
+              <Text style={s.statLabel}>{c.label}</Text>
+            </View>
+          ))}
         </View>
 
-        {/* ── Entry 3: Nature (highlighted) ── */}
-        <View style={styles.highlightCard}>
-          <View style={styles.entryMeta}>
-            <Text style={styles.entryDate}>October 21, 2023</Text>
-            <Text style={[styles.entryDate, { marginLeft: 'auto', fontSize: 18 }]}>🌿</Text>
-          </View>
-          <Text style={styles.entryTitle}>The garden is finally starting to bloom.</Text>
-          <Text style={styles.entryBody}>
-            Grateful for the small things. The lavender smells amazing. Spent 30 minutes just
-            sitting on the bench watching the bees.
+        {/* Total */}
+        <View style={s.totalBadge}>
+          <Text style={s.totalText}>
+            📊 {stats.total_logs} total logs in last 30 days
           </Text>
-          <View style={styles.tagRow}>
-            {['#GRATEFUL', '#NATURE'].map((t) => (
-              <Text key={t} style={styles.tag}>{t}</Text>
-            ))}
+        </View>
+
+        {/* Trend chart */}
+        {stats.trend.length > 0 && (
+          <View style={s.chartCard}>
+            <Text style={s.chartTitle}>7-Day Trend</Text>
+            <TrendChart trend={stats.trend} />
+            <View style={s.legend}>
+              {[
+                { color: C.sage,  label: 'Calm (1-3)'   },
+                { color: C.amber, label: 'Moderate (4-6)'},
+                { color: C.rose,  label: 'High (7-10)'  },
+              ].map((l, i) => (
+                <View key={i} style={s.legendItem}>
+                  <View style={[s.legendDot, { backgroundColor: l.color }]} />
+                  <Text style={s.legendText}>{l.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* ── Image Banner ── */}
-        <View style={styles.insightImg}>
-          <Text style={styles.insightImgEmoji}>🌅</Text>
-        </View>
-
-        {/* ── Entry 4: Plain with quote ── */}
-        <View style={styles.plainCard}>
-          <Text style={[styles.entryDate, { marginBottom: 6 }]}>October 19, 2023</Text>
-          <Text style={[styles.entryTitle, { fontSize: 22, marginBottom: 10 }]}>
-            The beauty of doing nothing.
-          </Text>
-          <View style={styles.blockquote}>
-            <Text style={styles.blockquoteText}>
-              "In the midst of movement and chaos, keep stillness inside of you"
+        {/* Insight */}
+        <View style={s.insightCard}>
+          <Text style={s.insightIcon}>💡</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.insightTitle}>Insight</Text>
+            <Text style={s.insightBody}>
+              {stats.avg_7days <= 3
+                ? "You're managing stress well this week. Keep it up!"
+                : stats.avg_7days <= 6
+                ? "Moderate stress detected. Try a breathing exercise."
+                : "High stress this week. Consider taking a break or journaling."}
             </Text>
           </View>
-          <Text style={[styles.entryBody, { marginTop: 10 }]}>
-            Decided to leave my phone in another room for the entire afternoon. The silence was
-            uncomfortable at first, then liberating.
-          </Text>
         </View>
-
-        {/* Load More */}
-        <TouchableOpacity style={styles.loadMoreBtn}>
-          <Text style={styles.loadMoreText}>Load older entries  ↓</Text>
-        </TouchableOpacity>
       </ScrollView>
+    );
+  };
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/wellness/journal')}
-      >
-        <Text style={styles.fabEmoji}>✏️</Text>
-      </TouchableOpacity>
-      {/* <BottomNav navigation={navigation} activeScreen="Wellness" /> */}
-            <BottomNav/>
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={s.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity
+          style={s.backBtn}
+          onPress={() => router.push('/(tabs)/wellness/homescreen')}
+          activeOpacity={0.7}
+        >
+          <Text style={s.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>Stress Tracker</Text>
+        <View style={{ width: 34 }} />
+      </View>
+
+      {/* Tabs */}
+      <View style={s.tabs}>
+        {(['log', 'history', 'stats'] as Tab[]).map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[s.tabBtn, tab === t && s.tabBtnActive]}
+            onPress={() => setTab(t)}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.tabBtnText, tab === t && s.tabBtnTextActive]}>
+              {t === 'log' ? '📝 Log' : t === 'history' ? '📋 History' : '📊 Stats'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Content */}
+      {tab === 'log'     && <LogTab />}
+      {tab === 'history' && <HistoryTab />}
+      {tab === 'stats'   && <StatsTab />}
+
+      <BottomNav />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F3EF' },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: C.bg },
 
-  topBar: {
+  header: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 24, paddingTop: 4, paddingBottom: 8,
   },
-  menuBtn: { padding: 4 },
-  menuLine: { width: 18, height: 2, backgroundColor: '#2C5F2E', borderRadius: 2, marginVertical: 2 },
-  topTitle: { fontSize: 15, fontWeight: '700', color: '#2C5F2E' },
-  avatarSm: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#4A9B8E', alignItems: 'center', justifyContent: 'center',
+  backBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: C.surface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  avatarEmoji: { fontSize: 17 },
+  backArrow:   { fontSize: 18, color: C.dark },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: C.dark },
 
-  scroll: { paddingBottom: 90 },
-
-  hero: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
-  heroTitle: { fontSize: 28, fontWeight: '800', color: '#1A2010', marginBottom: 4 },
-  heroSub: { fontSize: 12, color: '#8A8A7E' },
-
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginHorizontal: 16, marginBottom: 10,
-    backgroundColor: '#EDEAE3', borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 9,
+  // Tabs
+  tabs: {
+    flexDirection: 'row',
+    marginHorizontal: 20, marginBottom: 4,
+    backgroundColor: C.surface,
+    borderRadius: 14, padding: 4, gap: 2,
   },
-  searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, fontSize: 13, color: '#5A5A50' },
-
-  tabRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginBottom: 14 },
   tabBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1, borderColor: '#D0CCC4', backgroundColor: '#fff',
+    flex: 1, paddingVertical: 9,
+    borderRadius: 10, alignItems: 'center',
   },
-  tabBtnActive: { backgroundColor: '#3A5A2A', borderColor: '#3A5A2A' },
-  tabBtnText: { fontSize: 12, color: '#5A5A50', fontWeight: '500' },
-  tabBtnTextActive: { color: '#fff' },
+  tabBtnActive:     { backgroundColor: C.white },
+  tabBtnText:       { fontSize: 12, color: C.muted, fontWeight: '500' },
+  tabBtnTextActive: { color: C.dark, fontWeight: '700' },
 
-  /* Cards */
-  card: {
-    backgroundColor: '#fff', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
-  },
-  highlightCard: {
-    backgroundColor: '#F0EDE5', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
-  },
-  plainCard: {
-    marginHorizontal: 16, marginBottom: 12, paddingVertical: 14,
+  tabContent: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 12 },
+
+  sectionTitle: {
+    fontSize: 13, fontWeight: '600', color: C.muted,
+    letterSpacing: 0.4, marginBottom: 10, marginTop: 4,
+    textTransform: 'uppercase',
   },
 
-  entryMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  badge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeReflection: { backgroundColor: '#E8F5EE' },
-  badgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  badgeTextReflection: { color: '#3A7A3A' },
-  entryDate: { fontSize: 11, color: '#9A9A8E' },
-  entryTitle: { fontSize: 16, fontWeight: '700', color: '#1A2010', lineHeight: 22, marginBottom: 6 },
-  entryBody: { fontSize: 12, color: '#5A5A50', lineHeight: 19, marginBottom: 10 },
-
-  moodPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, backgroundColor: '#FFF8E0',
-    borderWidth: 1, borderColor: '#F0E0A0',
-    alignSelf: 'flex-start', marginBottom: 10,
+  // Level picker
+  levelWrap: { alignItems: 'center', marginBottom: 20 },
+  levelCircle: {
+    width: 120, height: 120, borderRadius: 60,
+    borderWidth: 3, alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
   },
-  moodEmoji: { fontSize: 14 },
-  moodLabel: { fontSize: 11, fontWeight: '600', color: '#8A7020' },
+  levelEmoji: { fontSize: 28, marginBottom: 2 },
+  levelNum:   { fontSize: 32, fontWeight: '800', lineHeight: 36 },
+  levelTag:   { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
 
-  entryImg: {
-    width: '100%', height: 130, borderRadius: 10,
+  levelGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: 8, justifyContent: 'center', width: '100%',
+  },
+  levelBtn: {
+    width: 46, height: 46, borderRadius: 12,
+    backgroundColor: C.white, borderWidth: 1.5, borderColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
   },
-  entryImgEmoji: { fontSize: 40 },
+  levelBtnText: { fontSize: 15, fontWeight: '600', color: C.muted },
 
-  /* Weekly Rhythm */
-  rhythmCard: {
-    backgroundColor: '#FDECEA', borderRadius: 16,
-    marginHorizontal: 16, marginBottom: 12, padding: 14,
+  // Note
+  noteInput: {
+    backgroundColor: C.white, borderRadius: 14,
+    borderWidth: 1.5, borderColor: C.surface,
+    padding: 14, fontSize: 14, color: C.dark,
+    minHeight: 90, lineHeight: 21, marginBottom: 20,
   },
-  rhythmIcon: { fontSize: 20, marginBottom: 6 },
-  rhythmTitle: { fontSize: 15, fontWeight: '700', color: '#1A2010', marginBottom: 4 },
-  rhythmDesc: { fontSize: 12, color: '#7A5A5A', lineHeight: 18, marginBottom: 10 },
-  rhythmGoalLbl: { fontSize: 9, color: '#9A7070', letterSpacing: 0.8, marginBottom: 4 },
-  rhythmBarWrap: { height: 4, backgroundColor: '#F0D8D8', borderRadius: 2, overflow: 'hidden' },
-  rhythmBar: { height: '100%', backgroundColor: '#C06060', borderRadius: 2 },
 
-  /* Avatar cluster */
-  avatarCluster: { flexDirection: 'row', alignItems: 'center' },
-  av: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: '#E8F0E8', borderWidth: 2, borderColor: '#fff',
-    alignItems: 'center', justifyContent: 'center',
+  // Triggers
+  triggerGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24,
   },
-  avExtra: { fontSize: 11, color: '#7A8070', marginLeft: 6 },
-
-  /* Tags */
-  tagRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  tag: { fontSize: 10, color: '#5A7A5A', fontWeight: '700', letterSpacing: 0.5 },
-
-  /* Insight image */
-  insightImg: {
-    marginHorizontal: 16, marginBottom: 12,
-    height: 120, borderRadius: 16,
-    backgroundColor: '#C8A020',
-    alignItems: 'center', justifyContent: 'center',
+  triggerChip: {
+    paddingVertical: 8, paddingHorizontal: 16,
+    borderRadius: 20, backgroundColor: C.white,
+    borderWidth: 1.5, borderColor: C.surface,
   },
-  insightImgEmoji: { fontSize: 48 },
+  triggerText: { fontSize: 13, fontWeight: '500', color: C.muted },
 
-  /* Blockquote */
-  blockquote: {
-    borderLeftWidth: 3, borderLeftColor: '#9A9A8E', paddingLeft: 12,
+  // Save button
+  saveBtn: {
+    borderRadius: 14, paddingVertical: 16,
+    alignItems: 'center', marginTop: 4,
   },
-  blockquoteText: { fontSize: 12, color: '#6A6A60', fontStyle: 'italic', lineHeight: 19 },
+  saveBtnText: { fontSize: 15, fontWeight: '700', color: C.white },
 
-  /* Load more */
-  loadMoreBtn: {
-    alignItems: 'center', justifyContent: 'center', paddingVertical: 16,
+  // History
+  empty: {
+    textAlign: 'center', color: C.muted,
+    marginTop: 60, fontSize: 14,
   },
-  loadMoreText: { fontSize: 13, fontWeight: '600', color: '#3A5A2A' },
 
-  /* FAB */
-  fab: {
-    position: 'absolute', bottom: 20, right: 16,
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: '#3A5A2A',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#3A5A2A', shadowOpacity: 0.4,
-    shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  // Stats
+  statGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12,
   },
-  fabEmoji: { fontSize: 22 },
+  statCard: {
+    width: (SW - 52) / 2, borderRadius: 16,
+    padding: 16, alignItems: 'center',
+  },
+  statNum:   { fontSize: 28, fontWeight: '800', color: C.dark },
+  statLabel: { fontSize: 11, color: C.muted, marginTop: 4, fontWeight: '500' },
+
+  totalBadge: {
+    backgroundColor: C.blueL, borderRadius: 12,
+    padding: 12, alignItems: 'center', marginBottom: 16,
+  },
+  totalText: { fontSize: 13, color: C.blue, fontWeight: '600' },
+
+  chartCard: {
+    backgroundColor: C.white, borderRadius: 16,
+    padding: 16, marginBottom: 14,
+  },
+  chartTitle: { fontSize: 13, fontWeight: '700', color: C.dark, marginBottom: 12 },
+  legend:     { flexDirection: 'row', gap: 12, marginTop: 12, flexWrap: 'wrap' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot:  { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: 10, color: C.muted },
+
+  insightCard: {
+    backgroundColor: C.amberL, borderRadius: 16,
+    padding: 16, flexDirection: 'row', gap: 12,
+  },
+  insightIcon:  { fontSize: 24 },
+  insightTitle: { fontSize: 13, fontWeight: '700', color: C.dark, marginBottom: 4 },
+  insightBody:  { fontSize: 13, color: C.muted, lineHeight: 19 },
 });

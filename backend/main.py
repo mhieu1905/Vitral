@@ -7,8 +7,12 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env.local'))
 
 from routers import activities, summary
 
-app = FastAPI(title="VitalTrack API")
+from backend.routes.stress import router as stress_router
 
+app = FastAPI()
+
+
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,9 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(activities.router, prefix="/api/activities", tags=["Activities"])
-app.include_router(summary.router, prefix="/api/summary", tags=["Summary"])
+# Include onboarding routes
+app.include_router(onboarding_router)
+app.include_router(stress_router)
 
 @app.get("/")
-def root():
-    return {"message": "VitalTrack API đang chạy!"}
+def read_root():
+    return {"message": "Welcome to Vitral API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
