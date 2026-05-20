@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/utils/supabase'
+import { API_BASE_URL } from '@/constants/api'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = API_BASE_URL
 
 let cachedToken = ''
 let tokenExpiry = 0

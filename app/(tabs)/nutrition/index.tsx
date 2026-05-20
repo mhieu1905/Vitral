@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   Bell,
   BookOpen,
@@ -8,6 +8,7 @@ import {
   Leaf,
   UtensilsCrossed,
 } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -24,14 +25,32 @@ import {
   NutritionTopBar,
   RingProgress,
 } from "@/components/nutrition";
+import { getNutritionDashboard } from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const WATER_RING_SIZE = 128;
 const WATER_STROKE = 10;
-const WATER_PCT = 1.2 / 2.5;
 
 export default function NutritionHub() {
   const router = useRouter();
+  const [waterIntake, setWaterIntake] = useState(0); // in Liters
+  const [waterGoal, setWaterGoal] = useState(2.5); // in Liters
+
+  const fetchWater = useCallback(async () => {
+    try {
+      const res = await getNutritionDashboard();
+      setWaterIntake(res.water_intake_l ?? 0);
+      setWaterGoal(res.water_goal_l ?? 2.5);
+    } catch (err) {
+      console.log("[NUTRITION INDEX] Error fetching water details:", err);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWater();
+    }, [fetchWater])
+  );
 
   return (
     <SafeAreaView style={s.safe}>
@@ -93,11 +112,11 @@ export default function NutritionHub() {
             <RingProgress
               size={WATER_RING_SIZE}
               stroke={WATER_STROKE}
-              pct={WATER_PCT}
+              pct={waterGoal > 0 ? waterIntake / waterGoal : 0}
               color={c.blue}
               trackColor="rgba(171,190,222,0.3)"
             >
-              <Text style={s.waterRingValue}>1.2L</Text>
+              <Text style={s.waterRingValue}>{waterIntake.toFixed(1)}L</Text>
             </RingProgress>
           </View>
 

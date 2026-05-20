@@ -53,10 +53,26 @@ function resolveConfirm(preset: string | undefined): FoodLogConfirmData {
 
 export default function FoodLogConfirmScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ preset?: string | string[] }>();
-  const presetRaw = params.preset;
-  const preset = Array.isArray(presetRaw) ? presetRaw[0] : presetRaw;
-  const data = resolveConfirm(preset);
+  const params = useLocalSearchParams<{
+    preset?: string;
+    meal?: string;
+    foodName?: string;
+    calories?: string;
+    protein?: string;
+    fat?: string;
+  }>();
+
+  let data = resolveConfirm(params.preset);
+  if (params.foodName) {
+    data = {
+      foodName: params.foodName,
+      macros: [
+        `${params.calories || "0"} KCAL`,
+        `${params.protein || "0"}G PROTEIN`,
+        `${params.fat || "0"}G FAT`
+      ]
+    };
+  }
 
   const progress = useSharedValue(0);
   useEffect(() => {
@@ -203,7 +219,11 @@ export default function FoodLogConfirmScreen() {
             Icon={ImageIcon}
             onPress={() => {
               Haptics.selectionAsync();
-              router.replace("/nutrition/add-food");
+              const m = params.meal && params.meal !== "undefined" && params.meal !== "null" ? params.meal : "";
+              router.replace({
+                pathname: "/nutrition/add-food",
+                params: m ? { meal: m } : undefined
+              });
             }}
           />
           <FooterTool
@@ -211,7 +231,11 @@ export default function FoodLogConfirmScreen() {
             Icon={Pencil}
             onPress={() => {
               Haptics.selectionAsync();
-              router.replace("/nutrition/add-food");
+              const m = params.meal && params.meal !== "undefined" && params.meal !== "null" ? params.meal : "";
+              router.replace({
+                pathname: "/nutrition/add-food",
+                params: m ? { meal: m } : undefined
+              });
             }}
           />
           <FooterTool

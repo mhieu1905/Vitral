@@ -1,6 +1,8 @@
-import { useRouter } from "expo-router";
-import { Moon, Plus } from "lucide-react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Cookie, Moon, Plus, Salad, Sun } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,16 +17,97 @@ import {
   NutritionAvatar,
   NutritionTopBar,
 } from "@/components/nutrition";
-import {
-  FOOD_LOG_MACRO_PIES,
-  FOOD_LOG_SECTIONS,
-  FOOD_LOG_SNACK_SECTION,
-  FOOD_LOG_TOTAL,
-} from "@/constants/nutrition";
+import { getFoodLogToday, getFoodImage } from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
+
+const getSectionIcon = (id: string) => {
+  switch (id.toLowerCase()) {
+    case 'b': return Sun;
+    case 'l': return Salad;
+    case 's': return Cookie;
+    case 'd': return Moon;
+    default: return Sun;
+  }
+};
 
 export default function FoodLogScreen() {
   const router = useRouter();
+  const [overview, setOverview] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOverview = useCallback(async () => {
+    try {
+      const res = await getFoodLogToday();
+      setOverview(res);
+    } catch (err) {
+      console.log("[FOOD-LOG] Error fetching food log overview:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchOverview();
+    }, [fetchOverview])
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={c.sageDark} />
+        <Text style={{ marginTop: 16, fontFamily: f.displayMed, fontSize: 16, color: c.textMuted }}>
+          Loading food logs...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  const consumed = overview?.consumed ?? 0;
+  const goal = overview?.goal ?? 2400;
+  const remaining = overview?.remaining ?? 2400;
+  const pct = overview?.pct ?? 0;
+  const macroPies = overview?.macro_pies ?? [
+    { label: "Carbs", value: "0g", pct: 0 },
+    { label: "Protein", value: "0g", pct: 0 },
+    { label: "Fats", value: "0g", pct: 0 },
+  ];
+
+  const sections = overview?.sections ? overview.sections.map((sec: any) => ({
+    ...sec,
+    Icon: getSectionIcon(sec.id),
+    items: sec.items.map((item: any) => ({
+      ...item,
+      image: getFoodImage(item.title)
+    }))
+  })) : [
+    { id: "b", title: "Breakfast", consumed: "0 kcal consumed", items: [], Icon: Sun },
+    { id: "l", title: "Lunch", consumed: "0 kcal consumed", items: [], Icon: Salad },
+    { id: "d", title: "Dinner", consumed: "0 kcal consumed", items: [], Icon: Moon },
+    { id: "s", title: "Snacks", consumed: "0 kcal consumed", items: [], Icon: Cookie },
+  ];
+
+  const breakfastSec = sections.find((s: any) => s.id === 'b');
+  const lunchSec = sections.find((s: any) => s.id === 'l');
+  const dinnerSec = sections.find((s: any) => s.id === 'd');
+  const snackSec = sections.find((s: any) => s.id === 's');
+
+  const handleItemPress = (section: any, itemId: string) => {
+    const item = section?.items?.find((it: any) => it.id === itemId);
+    if (item) {
+      const mealMap: { [key: string]: string } = {
+        b: "breakfast",
+        l: "lunch",
+        d: "dinner",
+        s: "snacks"
+      };
+      const mealType = mealMap[section.id] || "breakfast";
+      router.push({
+        pathname: "/nutrition/food-detail",
+        params: { name: item.title, meal: mealType }
+      });
+    }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -38,65 +121,86 @@ export default function FoodLogScreen() {
             <Text style={s.kicker}>TODAY&apos;S JOURNEY</Text>
             <View style={s.amountRow}>
               <Text style={s.amountValue}>
-                {FOOD_LOG_TOTAL.consumed.toLocaleString()}
+                {consumed.toLocaleString()}
               </Text>
               <Text style={s.amountTotal}>
-                / {FOOD_LOG_TOTAL.goal.toLocaleString()} kcal
+                / {goal.toLocaleString()} kcal
               </Text>
             </View>
           </View>
           <View style={s.leftBadge}>
-            <Text style={s.leftBadgeText}>{FOOD_LOG_TOTAL.remaining} left</Text>
+            <Text style={s.leftBadgeText}>{remaining} left</Text>
           </View>
         </View>
 
         <View style={s.progressBg}>
           <View
-            style={[s.progressFill, { width: `${FOOD_LOG_TOTAL.pct * 100}%` }]}
+            style={[s.progressFill, { width: `${Math.min(pct * 100, 100)}%` }]}
           />
         </View>
 
-        {FOOD_LOG_SECTIONS.map((sec) => (
+        {breakfastSec && (
           <FoodLogSection
-            key={sec.id}
-            section={sec}
-            onItemMore={() => router.push("/nutrition/food-detail")}
-            onAdd={() => router.push("/nutrition/add-food")}
+            section={breakfastSec}
+            onItemPress={(itemId) => handleItemPress(breakfastSec, itemId)}
+            onItemMore={(itemId) => handleItemPress(breakfastSec, itemId)}
+            onAdd={() => router.push({ pathname: "/nutrition/add-food", params: { meal: "breakfast" } })}
           />
-        ))}
+        )}
 
-        <View style={s.dinnerCard}>
-          <View style={s.dinnerIconBox}>
-            <Moon size={21} color={c.sageDark} strokeWidth={2} />
+        {lunchSec && (
+          <FoodLogSection
+            section={lunchSec}
+            onItemPress={(itemId) => handleItemPress(lunchSec, itemId)}
+            onItemMore={(itemId) => handleItemPress(lunchSec, itemId)}
+            onAdd={() => router.push({ pathname: "/nutrition/add-food", params: { meal: "lunch" } })}
+          />
+        )}
+
+        {dinnerSec && dinnerSec.items.length > 0 ? (
+          <FoodLogSection
+            section={dinnerSec}
+            onItemPress={(itemId) => handleItemPress(dinnerSec, itemId)}
+            onItemMore={(itemId) => handleItemPress(dinnerSec, itemId)}
+            onAdd={() => router.push({ pathname: "/nutrition/add-food", params: { meal: "dinner" } })}
+          />
+        ) : (
+          <View style={s.dinnerCard}>
+            <View style={s.dinnerIconBox}>
+              <Moon size={21} color={c.sageDark} strokeWidth={2} />
+            </View>
+            <Text style={s.dinnerTitle}>Dinner</Text>
+            <Text style={s.dinnerSub}>Nothing logged for tonight yet</Text>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={s.addDinnerBtn}
+              onPress={() => router.push({ pathname: "/nutrition/add-food", params: { meal: "dinner" } })}
+            >
+              <Plus size={10} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={s.addDinnerText}>Add Dinner</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={s.dinnerTitle}>Dinner</Text>
-          <Text style={s.dinnerSub}>Nothing logged for tonight yet</Text>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={s.addDinnerBtn}
-            onPress={() => router.push("/nutrition/add-food")}
-          >
-            <Plus size={10} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={s.addDinnerText}>Add Dinner</Text>
-          </TouchableOpacity>
-        </View>
+        )}
 
-        <FoodLogSection
-          section={FOOD_LOG_SNACK_SECTION}
-          onItemMore={() => router.push("/nutrition/food-detail")}
-          onAdd={() => router.push("/nutrition/add-food")}
-        />
+        {snackSec && (
+          <FoodLogSection
+            section={snackSec}
+            onItemPress={(itemId) => handleItemPress(snackSec, itemId)}
+            onItemMore={(itemId) => handleItemPress(snackSec, itemId)}
+            onAdd={() => router.push({ pathname: "/nutrition/add-food", params: { meal: "snacks" } })}
+          />
+        )}
 
         <View style={s.macroBalance}>
           <Text style={s.macroBalanceTitle}>Macro Balance</Text>
           <View style={s.macroGrid}>
-            {FOOD_LOG_MACRO_PIES.map((m) => (
+            {macroPies.map((m: any) => (
               <View key={m.label} style={s.macroItem}>
                 <Text style={s.macroItemLabel}>{m.label}</Text>
                 <Text style={s.macroItemValue}>{m.value}</Text>
                 <View style={s.macroItemBarBg}>
                   <View
-                    style={[s.macroItemBarFill, { width: `${m.pct * 100}%` }]}
+                    style={[s.macroItemBarFill, { width: `${Math.min(m.pct * 100, 100)}%` }]}
                   />
                 </View>
               </View>

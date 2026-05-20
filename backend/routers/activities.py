@@ -9,10 +9,24 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
 
 router = APIRouter()
 
-supabase = create_client(
-    os.getenv("EXPO_PUBLIC_SUPABASE_URL"),
-    os.getenv("SUPABASE_SERVICE_KEY")
-)
+_supabase = None
+
+def get_supabase():
+    global _supabase
+    if _supabase is None:
+        from supabase import create_client
+        url = os.getenv("EXPO_PUBLIC_SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
+        if not url or not key:
+            # Fallback to connection values
+            from database.connection import get_supabase_client
+            client = get_supabase_client()
+            # Wrap custom client to match expected auth interface if needed,
+            # but since we want to be safe, we will just raise error if envs not set.
+            raise RuntimeError(f"Supabase credentials not found in env. URL={bool(url)}, KEY={bool(key)}")
+        _supabase = create_client(url, key)
+    return _supabase
+
 
 class ActivityCreate(BaseModel):
     activity_type: str
@@ -23,7 +37,7 @@ class ActivityCreate(BaseModel):
 def get_user_id(authorization: str) -> str:
     try:
         token = authorization.replace("Bearer ", "")
-        user = supabase.auth.get_user(token)
+        user = get_supabase().auth.get_user(token)
         return user.user.id
     except:
         raise HTTPException(status_code=401, detail="Token không hợp lệ")
@@ -34,7 +48,7 @@ def log_activity(body: ActivityCreate, authorization: str = Header(...)):
     user_id = get_user_id(authorization)
     calories = calculate_calories(body.activity_type, body.duration, body.intensity)
 
-    result = supabase.table("activities").insert({
+    result = get_supabase().table("activities").insert({
         "user_id": user_id,
         "activity_type": body.activity_type,
         "duration": body.duration,
@@ -56,7 +70,7 @@ def log_activity(body: ActivityCreate, authorization: str = Header(...)):
 def get_history(authorization: str = Header(...)):
     user_id = get_user_id(authorization)
 
-    result = supabase.table("activities") \
+    result = get_supabase().table("activities") \
         .select("*") \
         .eq("user_id", user_id) \
         .order("created_at", desc=True) \
@@ -72,7 +86,7 @@ def get_exercises(
     activity_type: str,
     intensity: str
 ):
-    result = supabase.table("workout_exercises") \
+    result = get_supabase().table("workout_exercises") \
         .select("*") \
         .eq("activity_type", activity_type) \
         .eq("intensity", intensity) \
@@ -89,7 +103,7 @@ def get_exercises(
 def get_detail(activity_id: str, authorization: str = Header(...)):
     user_id = get_user_id(authorization)
 
-    result = supabase.table("activities") \
+    result = get_supabase().table("activities") \
         .select("*") \
         .eq("id", activity_id) \
         .eq("user_id", user_id) \

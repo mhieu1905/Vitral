@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { CalendarDays, ChevronLeft, MoreVertical } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -13,14 +13,26 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DailyVitalityCard, SuccessDishRing } from '@/components/nutrition';
 import { ADD_TO_MEAL_PLAN_DEFAULT as DATA } from '@/constants/nutrition';
+import { getNutritionDashboard } from '@/services/nutritionService';
 import { nutritionColors as c, nutritionFonts as f } from '@/theme/nutrition';
 
 export default function AddToMealPlanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [dashboard, setDashboard] = useState<any>(null);
 
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    async function load() {
+      try {
+        const res = await getNutritionDashboard();
+        setDashboard(res);
+      } catch (err) {
+        console.log("[ADD-TO-MEAL-PLAN] Error fetching dashboard data:", err);
+      }
+    }
+    load();
   }, []);
 
   const handlePrimary = () => {
@@ -32,6 +44,31 @@ export default function AddToMealPlanScreen() {
     void Haptics.selectionAsync();
     router.dismissTo('/nutrition/recipe-detail');
   };
+
+  const consumedKcal = dashboard?.calories_consumed ?? DATA.consumedKcal;
+  const totalKcal = dashboard?.calories_target ?? DATA.totalKcal;
+  const pct = totalKcal > 0 ? consumedKcal / totalKcal : DATA.pct;
+
+  const macros = dashboard?.macros ? [
+    {
+      id: 'protein' as const,
+      label: 'PROTEIN',
+      value: dashboard.macros.find((m: any) => m.label.toLowerCase().includes("protein"))?.current ?? '0g',
+      tone: 'sage' as const
+    },
+    {
+      id: 'carbs' as const,
+      label: 'CARBS',
+      value: dashboard.macros.find((m: any) => m.label.toLowerCase().includes("carb"))?.current ?? '0g',
+      tone: 'pink' as const
+    },
+    {
+      id: 'fats' as const,
+      label: 'FATS',
+      value: dashboard.macros.find((m: any) => m.label.toLowerCase().includes("fat"))?.current ?? '0g',
+      tone: 'blue' as const
+    }
+  ] : DATA.macros;
 
   return (
     <SafeAreaView style={s.safe} edges={['bottom']}>
@@ -69,10 +106,10 @@ export default function AddToMealPlanScreen() {
         >
           <DailyVitalityCard
             kicker={DATA.kicker}
-            consumedKcal={DATA.consumedKcal}
-            totalKcal={DATA.totalKcal}
-            pct={DATA.pct}
-            macros={DATA.macros}
+            consumedKcal={consumedKcal}
+            totalKcal={totalKcal}
+            pct={pct}
+            macros={macros}
           />
         </Animated.View>
 

@@ -8,14 +8,25 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
 
 router = APIRouter()
 
-supabase = create_client(
-    os.getenv("EXPO_PUBLIC_SUPABASE_URL"),
-    os.getenv("SUPABASE_SERVICE_KEY")
-)
+_supabase = None
+
+def get_supabase():
+    global _supabase
+    if _supabase is None:
+        from supabase import create_client
+        url = os.getenv("EXPO_PUBLIC_SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
+        if not url or not key:
+            from database.connection import get_supabase_client
+            client = get_supabase_client()
+            raise RuntimeError(f"Supabase credentials not found in env. URL={bool(url)}, KEY={bool(key)}")
+        _supabase = create_client(url, key)
+    return _supabase
+
 def get_user_id(authorization: str) -> str:
     try:
         token = authorization.replace("Bearer ", "")
-        user = supabase.auth.get_user(token)
+        user = get_supabase().auth.get_user(token)
         return user.user.id
     except:
         raise HTTPException(status_code=401, detail="Token không hợp lệ")
@@ -26,7 +37,7 @@ def get_today_summary(authorization: str = Header(...)):
     user_id = get_user_id(authorization)
     today = date.today().isoformat()
 
-    result = supabase.table("activities") \
+    result = get_supabase().table("activities") \
         .select("calories_burned, duration, activity_type") \
         .eq("user_id", user_id) \
         .gte("created_at", f"{today}T00:00:00") \
@@ -47,7 +58,7 @@ def get_today_summary(authorization: str = Header(...)):
 def get_summary_by_date(target_date: str, authorization: str = Header(...)):
     user_id = get_user_id(authorization)
 
-    result = supabase.table("activities") \
+    result = get_supabase().table("activities") \
         .select("calories_burned, duration, activity_type") \
         .eq("user_id", user_id) \
         .gte("created_at", f"{target_date}T00:00:00") \

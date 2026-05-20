@@ -13,8 +13,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react-native";
-import { useEffect } from "react";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Dimensions, Pressable, StyleSheet, Text, View, Alert, ActivityIndicator } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -33,6 +33,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NutritionAvatar } from "@/components/nutrition";
 import { SCAN_RESULT, ScanResultData } from "@/constants/nutrition";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
+import { logFood } from "@/services/nutritionService";
 
 const { width: W, height: H } = Dimensions.get("window");
 const CARD_W = W - 48 - 50;
@@ -41,6 +42,10 @@ const FRAME_W = W - 48;
 export default function ScanSuccessScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const rawMeal = params.meal as string;
+  const meal = (rawMeal && rawMeal !== "undefined" && rawMeal !== "null") ? rawMeal : undefined;
 
   let scanData: ScanResultData = SCAN_RESULT;
   if (params.scannedData) {
@@ -56,6 +61,62 @@ export default function ScanSuccessScreen() {
       console.error("Failed to parse scanned data", e);
     }
   }
+
+  const getNutritionValue = (unitName: string): number => {
+    const item = scanData.nutrition.find(n => n.unit === unitName);
+    if (!item) return 0;
+    return parseInt(item.value.replace(/[^0-9.]/g, ""), 10) || 0;
+  };
+
+  const getMealTypeFromTime = (): string => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 11) return "breakfast";
+    if (hour >= 11 && hour < 16) return "lunch";
+    if (hour >= 16 && hour < 19) return "snacks";
+    return "dinner";
+  };
+
+  const handleAddToLog = async () => {
+    try {
+      setIsSubmitting(true);
+      const calories = getNutritionValue("KCAL");
+      const protein = getNutritionValue("PROT");
+      const fat = getNutritionValue("FAT");
+      const carbs = getNutritionValue("CARBS");
+      const mealType = meal || getMealTypeFromTime();
+
+      await logFood({
+        food_name: scanData.title.replace(/\n/g, " "),
+        meal_type: mealType,
+        calories: calories,
+        protein_g: protein,
+        fat_g: fat,
+        carbs_g: carbs,
+        serving_size: "estimation",
+        serving_qty: 1
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      router.replace({
+        pathname: "/nutrition/food-log-confirm",
+        params: {
+          preset: "scan",
+          foodName: scanData.title.replace(/\n/g, " "),
+          calories: calories.toString(),
+          protein: protein.toString(),
+          fat: fat.toString(),
+          carbs: carbs.toString(),
+          meal: mealType
+        }
+      });
+    } catch (error) {
+      console.error("Failed to log scanned food:", error);
+      Alert.alert("Error", "Failed to add food to your log. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const corners = useSharedValue(0);
   const cardScale = useSharedValue(0.88);
@@ -231,7 +292,10 @@ export default function ScanSuccessScreen() {
               hitSlop={12}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push("/nutrition/food-detail");
+                router.push({
+                  pathname: "/nutrition/food-detail",
+                  params: { name: scanData.title.replace(/\n/g, " "), meal: meal || "" }
+                });
               }}
               style={({ pressed }) => [
                 s.feedbackRow,
@@ -251,17 +315,21 @@ export default function ScanSuccessScreen() {
           style={s.actions}
         >
           <Pressable
-            style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [s.primaryBtn, (pressed || isSubmitting) && { opacity: 0.9 }]}
+            disabled={isSubmitting}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.replace({
-                pathname: "/nutrition/food-log-confirm",
-                params: { preset: "scan" },
-              });
+              handleAddToLog();
             }}
           >
-            <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={s.primaryBtnText}>Add to Food Log</Text>
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={s.primaryBtnText}>Add to Food Log</Text>
+              </>
+            )}
           </Pressable>
 
           <View style={s.secondaryRow}>
@@ -269,7 +337,10 @@ export default function ScanSuccessScreen() {
               style={({ pressed }) => [s.glassBtn, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push("/nutrition/food-detail");
+                router.push({
+                  pathname: "/nutrition/food-detail",
+                  params: { name: scanData.title.replace(/\n/g, " "), meal: meal || "" }
+                });
               }}
             >
               <FileText size={16} color="#FFFFFF" strokeWidth={2} />
