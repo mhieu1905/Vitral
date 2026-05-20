@@ -3,13 +3,9 @@ import { getTodaySummary } from '@/services/activityService';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 export default function ActivitySummary() {

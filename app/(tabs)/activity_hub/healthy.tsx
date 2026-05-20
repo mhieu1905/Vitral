@@ -2,13 +2,9 @@ import BottomNav from '@/components/bottom-nav';
 import { getActivityHistory, getTodaySummary } from '@/services/activityService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+  Dimensions, ScrollView, StyleSheet, Text, View
 } from 'react-native';
 
 const { width } = Dimensions.get('window');

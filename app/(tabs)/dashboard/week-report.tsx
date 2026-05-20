@@ -1,7 +1,10 @@
 import BottomNav from '@/components/bottom-nav';
 import { Cloud, Droplets, Moon, Sun } from 'lucide-react-native';
 import React from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Image, ScrollView, StyleSheet, Text, TouchableOpacity, View
+} from 'react-native';
 
 const COLORS = {
   background: '#FDF8F3',

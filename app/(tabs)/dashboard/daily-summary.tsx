@@ -1,12 +1,8 @@
 import React from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+  ScrollView, StyleSheet, Text, TouchableOpacity, View
+} from 'react-native';
 
 import {
   Calendar,

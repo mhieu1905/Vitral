@@ -15,16 +15,10 @@ import {
   Sun,
 } from "lucide-react-native";
 import React from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+  Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View
+} from 'react-native';
 import Svg, {
   Defs,
   Rect,

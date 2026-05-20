@@ -13,8 +13,9 @@ import {
   Sparkles,
   Sun,
 } from "lucide-react-native";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -23,6 +24,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "@/utils/supabase";
+import { healthProfileService } from "@/services/healthProfileService";
+import { tdeeService } from "@/services/tdeeService";
+import type { NutritionTarget } from "@/types/tdee";
+import { GOAL_LABELS } from "@/types/healthProfile";
+import type { HealthProfile } from "@/types/healthProfile";
 
 const COLORS = {
   background: "#FFFBF8",
@@ -38,6 +45,34 @@ const COLORS = {
 
 export default function DashboardNative() {
   const router = useRouter();
+  const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
+  const [profile, setProfile] = useState<HealthProfile | null>(null);
+  const [userName, setUserName] = useState("there");
+  const [targetLoading, setTargetLoading] = useState(true);
+
+  const loadNutritionTarget = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserName(
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "there"
+      );
+      const hp = await healthProfileService.getUserHealthProfile(user.id);
+      if (hp) {
+        setProfile(hp);
+        setNutritionTarget(tdeeService.getDailyNutritionTarget(hp));
+      }
+    } catch (e) {
+      console.error("[Dashboard] Failed to load nutrition target:", e);
+    } finally {
+      setTargetLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadNutritionTarget(); }, [loadNutritionTarget]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -49,7 +84,7 @@ export default function DashboardNative() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome back, Elena</Text>
+          <Text style={styles.title}>Welcome back, {userName}</Text>
           <Text style={styles.subtitle}>Find your center in every moment.</Text>
         </View>
 
@@ -144,6 +179,13 @@ export default function DashboardNative() {
           </View>
         </TouchableOpacity>
 
+        {/* Nutrition Targets Card */}
+        <NutritionTargetsCard
+          target={nutritionTarget}
+          profile={profile}
+          loading={targetLoading}
+        />
+
         {/* Health Hub Section */}
         <View style={styles.hubSection}>
           <Text style={styles.sectionTitle}>Health Hub</Text>
@@ -222,6 +264,208 @@ export default function DashboardNative() {
     </SafeAreaView>
   );
 }
+
+function NutritionTargetsCard({
+  target,
+  profile,
+  loading,
+}: {
+  target: NutritionTarget | null;
+  profile: HealthProfile | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <View style={nt.card}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+      </View>
+    );
+  }
+  if (!target || !profile) return null;
+
+  const macros = [
+    { label: "Protein", grams: target.protein_target, color: "#6B9E62", bg: "#E3F1DF" },
+    { label: "Carbs",   grams: target.carbs_target,   color: "#C4943A", bg: "#FDF5E6" },
+    { label: "Fat",     grams: target.fat_target,      color: "#A34A4A", bg: "#FDF1EB" },
+  ];
+
+  return (
+    <View style={nt.card}>
+      {/* Header */}
+      <View style={nt.headerRow}>
+        <Text style={nt.headerTitle}>Daily Nutrition</Text>
+        <View style={nt.goalBadge}>
+          <Text style={nt.goalBadgeText}>{GOAL_LABELS[profile.goal]}</Text>
+        </View>
+      </View>
+
+      {/* BMR / TDEE / Calorie Goal */}
+      <View style={nt.metricsRow}>
+        <View style={nt.metricItem}>
+          <Text style={nt.metricEmoji}>⚡</Text>
+          <Text style={nt.metricValue}>{target.bmr}</Text>
+          <Text style={nt.metricLabel}>BMR</Text>
+        </View>
+        <View style={nt.metricDivider} />
+        <View style={nt.metricItem}>
+          <Text style={nt.metricEmoji}>🔥</Text>
+          <Text style={nt.metricValue}>{target.tdee}</Text>
+          <Text style={nt.metricLabel}>TDEE</Text>
+        </View>
+        <View style={nt.metricDivider} />
+        <View style={nt.metricItem}>
+          <Text style={nt.metricEmoji}>🎯</Text>
+          <Text style={[nt.metricValue, { color: COLORS.primary }]}>
+            {target.calorie_goal}
+          </Text>
+          <Text style={nt.metricLabel}>Goal</Text>
+        </View>
+      </View>
+
+      {/* kcal label */}
+      <Text style={nt.kcalHint}>kcal / day</Text>
+
+      {/* Macro bars */}
+      <View style={nt.macroSection}>
+        <Text style={nt.macroTitle}>MACRO TARGETS</Text>
+        {macros.map((m) => (
+          <View key={m.label} style={nt.macroRow}>
+            <View style={[nt.macroDot, { backgroundColor: m.color }]} />
+            <Text style={nt.macroLabel}>{m.label}</Text>
+            <View style={nt.macroBarTrack}>
+              <View
+                style={[
+                  nt.macroBarFill,
+                  {
+                    backgroundColor: m.color,
+                    width: `${Math.min((m.grams / (target.protein_target + target.carbs_target + target.fat_target)) * 100 * 2.5, 100)}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[nt.macroGrams, { color: m.color }]}>{m.grams}g</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const nt = StyleSheet.create({
+  card: {
+    marginHorizontal: 28,
+    marginTop: 16,
+    padding: 24,
+    borderRadius: 32,
+    backgroundColor: COLORS.surface,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.textDark,
+  },
+  goalBadge: {
+    backgroundColor: COLORS.sageLight,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  goalBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginBottom: 4,
+  },
+  metricItem: { alignItems: "center", flex: 1, gap: 2 },
+  metricEmoji: { fontSize: 18 },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: COLORS.textDark,
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+  },
+  metricDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
+  kcalHint: {
+    textAlign: "center",
+    fontSize: 10,
+    color: COLORS.textMuted,
+    opacity: 0.6,
+    marginBottom: 18,
+    fontWeight: "600",
+  },
+  macroSection: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+    paddingTop: 16,
+  },
+  macroTitle: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+    opacity: 0.5,
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  macroRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 8,
+  },
+  macroDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  macroLabel: {
+    width: 54,
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textDark,
+  },
+  macroBarTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(0,0,0,0.04)",
+    overflow: "hidden",
+  },
+  macroBarFill: {
+    height: 8,
+    borderRadius: 4,
+  },
+  macroGrams: {
+    width: 40,
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "right",
+  },
+});
 
 function HubItem({ icon, label, color, onPress }: any) {
   return (

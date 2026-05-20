@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions
+} from 'react-native';
 import BottomNav from '@/components/bottom-nav';
 import { Layout, Activity, Utensils, Heart, User, Footprints, Flame, Moon, Droplets } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';

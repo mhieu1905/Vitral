@@ -11,9 +11,9 @@
 import BottomNav from '@/components/bottom-nav';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Animated, SafeAreaView, StatusBar,
-  StyleSheet, Text, TouchableOpacity, View,
+  Animated, StatusBar, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 const C = {

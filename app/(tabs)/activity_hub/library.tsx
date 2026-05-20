@@ -1,15 +1,9 @@
 import BottomNav from '@/components/bottom-nav';
 import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 const { width } = Dimensions.get('window');

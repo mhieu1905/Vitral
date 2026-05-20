@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions
+} from 'react-native';
 import BottomNav from '@/components/bottom-nav';
 import { Droplets, Plus } from 'lucide-react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, ClipPath, Rect, G } from 'react-native-svg';

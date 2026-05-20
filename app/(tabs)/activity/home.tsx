@@ -2,15 +2,9 @@ import { getActivityHistory, getTodaySummary } from '@/services/activityService'
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 const { width } = Dimensions.get('window');

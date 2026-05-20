@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput
+} from 'react-native';
 import BottomNav from '@/components/bottom-nav';
 import { Frown, Meh, Smile, Laugh, ChevronRight } from 'lucide-react-native';
 
