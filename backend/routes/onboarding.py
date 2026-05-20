@@ -3,9 +3,13 @@ from typing import Any
 from uuid import UUID
 from typing import Any
 
-from ..models.user_health_profile import UserHealthProfile, UserHealthProfileCreate, UserHealthProfileUpdate
-from ..services.onboarding_service import OnboardingService
-from ..database.connection import get_supabase_client
+from models.user_health_profile import (
+    UserHealthProfile,
+    UserHealthProfileCreate,
+    UserHealthProfileUpdate
+)
+from services.onboarding_service import OnboardingService
+from database.connection import get_supabase_client
 
 router = APIRouter(
     prefix="/onboarding",

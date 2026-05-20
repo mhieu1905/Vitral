@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from uuid import UUID
 
-from ..models.user_health_profile import UserHealthProfileCreate, UserHealthProfileUpdate, UserHealthProfile
+from models.user_health_profile import UserHealthProfileCreate, UserHealthProfileUpdate, UserHealthProfile
 from .calorie_calculator import CalorieCalculatorService
 
 class OnboardingService:

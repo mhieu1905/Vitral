@@ -1,18 +1,23 @@
+import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import os
-# Đọc .env.local từ thư mục gốc (D:\Vitral\.env.local)
+
+# 1. ĐƯA THƯ MỤC BACKEND VÀO PATH HỆ THỐNG TRƯỚC (BẮT BUỘC ĐỂ ĐẦU TIÊN)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# 2. ĐỌC FILE CẤU HÌNH .ENV.LOCAL
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env.local'))
 
+# 3. IMPORT CÁC ROUTER CHUẨN ĐƯỜNG DẪN PACKAGE
+from routes.onboarding import router as onboarding_router
 from routers import activities, summary
-
-from backend.routes.stress import router as stress_router
+from routes.stress import router as stress_router  # Đã bỏ 'backend.' ở đầu vì dùng sys.path ở trên
 
 app = FastAPI()
 
-
-# CORS configuration
+# Cấu hình CORS để Frontend kết nối thoải mái
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,9 +26,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include onboarding routes
+# Đăng ký các Router vào hệ thống FastAPI
 app.include_router(onboarding_router)
 app.include_router(stress_router)
+app.include_router(activities.router, prefix="/api/activities", tags=["Activities"]) # Thêm router activities để test log calo lúc nãy
+app.include_router(summary.router, prefix="/api/summary", tags=["Summary"])
 
 @app.get("/")
 def read_root():
