@@ -1,6 +1,9 @@
-import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronRight, Plus, Sparkles } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +26,11 @@ import {
   DASHBOARD_MEALS,
   NUTRITION_TARGETS,
 } from "@/constants/nutrition";
+import {
+  getMealImage,
+  getNutritionDashboard,
+  logWater,
+} from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const RING_SIZE = 256;
@@ -30,7 +38,86 @@ const RING_STROKE = 14;
 
 export default function NutritionDashboard() {
   const router = useRouter();
-  const pct = NUTRITION_TARGETS.caloriesConsumed / NUTRITION_TARGETS.calories;
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const res = await getNutritionDashboard();
+      setDashboard(res);
+    } catch (err) {
+      console.log("[DASHBOARD] Error fetching nutrition dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboard();
+    }, [fetchDashboard])
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={c.sageDark} />
+        <Text style={{ marginTop: 16, fontFamily: f.displayMed, fontSize: 16, color: c.textMuted }}>
+          Loading your dashboard...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  const calories = dashboard?.calories_target ?? 2400;
+  const caloriesConsumed = dashboard?.calories_consumed ?? 0;
+  const caloriesRemaining = dashboard?.calories_remaining ?? 2400;
+  const caloriesBurned = dashboard?.calories_burned ?? 0;
+  const waterGoalL = dashboard?.water_goal_l ?? 2.5;
+  const waterIntakeL = dashboard?.water_intake_l ?? 0.0;
+  const pct = calories > 0 ? caloriesConsumed / calories : 0;
+
+  // Macros
+  const macros = dashboard?.macros ? dashboard.macros.map((m: any) => {
+    let barColor = c.sage;
+    if (m.label.toLowerCase().includes("protein")) barColor = c.blueLight;
+    if (m.label.toLowerCase().includes("fat")) barColor = c.yellow;
+    return {
+      ...m,
+      color: barColor
+    };
+  }) : [
+    { label: "Carbohydrates", current: "0g", total: "250g", pct: 0, color: c.sage },
+    { label: "Protein", current: "0g", total: "120g", pct: 0, color: c.blueLight },
+    { label: "Fats", current: "0g", total: "70g", pct: 0, color: c.yellow },
+  ];
+
+  // Meals
+  const meals = dashboard?.meals ? dashboard.meals.map((meal: any) => ({
+    ...meal,
+    image: getMealImage(meal.id)
+  })) : [
+    { id: "b", title: "Breakfast", desc: "Not logged yet", time: "Plan: 08:30 AM", empty: true, image: getMealImage("b") },
+    { id: "l", title: "Lunch", desc: "Not logged yet", time: "Plan: 01:15 PM", empty: true, image: getMealImage("l") },
+    { id: "d", title: "Dinner", desc: "Not logged yet", time: "Plan: 07:30 PM", empty: true, image: getMealImage("d") },
+    { id: "s", title: "Snacks", desc: "Not logged yet", time: "Plan: 04:45 PM", empty: true, image: getMealImage("s") },
+  ];
+
+  // Insight
+  const insight = dashboard?.insight ?? {
+    title: "Nutritional Insight",
+    desc: "Start logging your meals to get personalized, AI-driven insights on your nutrition."
+  };
+
+  const handleQuickAddWater = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await logWater(250); // Add 250ml
+      await fetchDashboard();
+    } catch (err) {
+      console.log("[DASHBOARD] Error quick adding water:", err);
+    }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -42,7 +129,7 @@ export default function NutritionDashboard() {
         <View style={s.ringCard}>
           <Text style={s.ringTitle}>Daily Progress</Text>
           <Text style={s.ringTarget}>
-            Target: {NUTRITION_TARGETS.calories.toLocaleString()} kcal
+            Target: {calories.toLocaleString()} kcal
           </Text>
 
           <View style={s.ringWrap}>
@@ -54,7 +141,7 @@ export default function NutritionDashboard() {
               trackColor={c.cardCream}
             >
               <Text style={s.ringValue}>
-                {NUTRITION_TARGETS.caloriesConsumed.toLocaleString()}
+                {caloriesConsumed.toLocaleString()}
               </Text>
               <Text style={s.ringUnit}>kcal consumed</Text>
             </RingProgress>
@@ -64,13 +151,13 @@ export default function NutritionDashboard() {
             <View style={s.ringStatItem}>
               <Text style={s.ringStatLabel}>REMAINING</Text>
               <Text style={[s.ringStatValue, { color: c.sageDark }]}>
-                {NUTRITION_TARGETS.caloriesRemaining}
+                {caloriesRemaining}
               </Text>
             </View>
             <View style={s.ringStatItem}>
               <Text style={s.ringStatLabel}>BURNED</Text>
               <Text style={[s.ringStatValue, { color: c.pink }]}>
-                {NUTRITION_TARGETS.caloriesBurned}
+                {caloriesBurned}
               </Text>
             </View>
           </View>
@@ -78,7 +165,7 @@ export default function NutritionDashboard() {
 
         <View style={s.macroCard}>
           <Text style={s.macroTitle}>Macro Intake</Text>
-          {DASHBOARD_MACROS.map((m) => (
+          {macros.map((m: any) => (
             <MacroBar
               key={m.label}
               label={m.label}
@@ -91,40 +178,66 @@ export default function NutritionDashboard() {
         </View>
 
         <View style={s.waterCard}>
-          <View>
-            <Text style={s.waterLabel}>Water Intake</Text>
-            <View style={s.waterRow}>
-              <Text style={s.waterValue}>
-                {NUTRITION_TARGETS.waterIntakeL}{" "}
-              </Text>
-              <Text style={s.waterUnit}>
-                / {NUTRITION_TARGETS.waterGoalL} L
-              </Text>
+          <Pressable 
+            style={s.waterRow} 
+            onPress={() => router.push("/nutrition/water-log")}
+          >
+            <View>
+              <Text style={s.waterLabel}>Water Intake</Text>
+              <View style={s.waterRow}>
+                <Text style={s.waterValue}>
+                  {waterIntakeL.toFixed(1)}{" "}
+                </Text>
+                <Text style={s.waterUnit}>
+                  / {waterGoalL.toFixed(1)} L
+                </Text>
+              </View>
             </View>
-          </View>
-          <TouchableOpacity activeOpacity={0.9} style={s.waterAddBtn}>
+          </Pressable>
+          <TouchableOpacity 
+            activeOpacity={0.9} 
+            style={s.waterAddBtn}
+            onPress={handleQuickAddWater}
+          >
             <Plus size={14} color="#FFFFFF" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
         <View style={s.mealsHeader}>
           <Text style={s.mealsTitle}>Today&apos;s Meals</Text>
-          <Pressable
-            hitSlop={6}
-            style={s.addMealBtn}
-            onPress={() => router.push("/nutrition/add-food")}
-          >
-            <Text style={s.addMealText}>Add Meal</Text>
-            <ChevronRight size={12} color={c.sageDark} strokeWidth={2.5} />
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+            <Pressable
+              hitSlop={6}
+              style={s.addMealBtn}
+              onPress={() => router.push("/nutrition/food-log")}
+            >
+              <Text style={s.addMealText}>View Log</Text>
+              <ChevronRight size={12} color={c.sageDark} strokeWidth={2.5} />
+            </Pressable>
+            <Text style={{ color: "rgba(75,101,70,0.2)", fontFamily: f.display }}>|</Text>
+            <Pressable
+              hitSlop={6}
+              style={s.addMealBtn}
+              onPress={() => router.push("/nutrition/add-food")}
+            >
+              <Text style={s.addMealText}>Add</Text>
+              <ChevronRight size={12} color={c.sageDark} strokeWidth={2.5} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={s.mealsList}>
-          {DASHBOARD_MEALS.map((meal) => (
+          {meals.map((meal: any) => (
             <MealCard
               key={meal.id}
               meal={meal}
-              onPress={() => router.push("/nutrition/food-detail")}
+              onPress={() => {
+                if (meal.empty) {
+                  router.push("/nutrition/add-food");
+                } else {
+                  router.push("/nutrition/food-log");
+                }
+              }}
             />
           ))}
         </View>
@@ -133,11 +246,9 @@ export default function NutritionDashboard() {
           <View style={s.insightIconBox}>
             <Sparkles size={25} color={c.sageDark} strokeWidth={2} />
           </View>
-          <Text style={s.insightTitle}>Nutritional Insight</Text>
+          <Text style={s.insightTitle}>{insight.title}</Text>
           <Text style={s.insightDesc}>
-            You&apos;ve reached 80% of your protein goal today. Increasing your
-            intake slightly during dinner will help with muscle recovery after
-            your morning workout.
+            {insight.desc}
           </Text>
           <TouchableOpacity activeOpacity={0.9} style={s.trendsBtn}>
             <Text style={s.trendsBtnText}>View Trends</Text>

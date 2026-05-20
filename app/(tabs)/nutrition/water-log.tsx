@@ -1,8 +1,9 @@
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Clock, Flame, MoreVertical } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,11 +25,11 @@ import {
   HYDRATION_HISTORY,
   WATER_CUSTOM_DEFAULT_ML,
   WATER_LOG_GOAL_ML,
-  WATER_LOG_INITIAL_INTAKE_ML,
   WATER_QUICK_TILE_AMOUNTS_ML,
   WATER_STATS_FACTORY,
   getWaterMotivationalMessage,
 } from "@/constants/nutrition";
+import { getNutritionDashboard, logWater } from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f, waterColors as w } from "@/theme/nutrition";
 
 const TOAST_DURATION_MS = 3500;
@@ -37,7 +38,8 @@ export default function WaterLogScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [intake, setIntake] = useState(WATER_LOG_INITIAL_INTAKE_ML);
+  const [intake, setIntake] = useState(0);
+  const [goal, setGoal] = useState(WATER_LOG_GOAL_ML);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetInitialSelected, setSheetInitialSelected] = useState(0);
   const [toast, setToast] = useState<{ visible: boolean; amount: number }>({
@@ -45,11 +47,25 @@ export default function WaterLogScreen() {
     amount: 0,
   });
 
+  const fetchWaterIntake = useCallback(async () => {
+    try {
+      const res = await getNutritionDashboard();
+      setIntake(Math.round((res.water_intake_l || 0) * 1000));
+      setGoal(Math.round((res.water_goal_l || 2.5) * 1000));
+    } catch (err) {
+      console.log("[WATER-LOG] Error fetching water stats:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWaterIntake();
+  }, [fetchWaterIntake]);
+
   const percentage = Math.min(
-    Math.round((intake / WATER_LOG_GOAL_ML) * 100),
+    Math.round((intake / goal) * 100),
     100,
   );
-  const remaining = Math.max(WATER_LOG_GOAL_ML - intake, 0);
+  const remaining = Math.max(goal - intake, 0);
   const motivation = getWaterMotivationalMessage(percentage);
   const stats = useMemo(() => WATER_STATS_FACTORY(Clock, Flame), []);
 
@@ -61,14 +77,24 @@ export default function WaterLogScreen() {
 
   const closeSheet = () => setSheetVisible(false);
 
-  const handleConfirm = (amount: number) => {
-    setSheetVisible(false);
-    setIntake((prev) => Math.min(prev + amount, WATER_LOG_GOAL_ML));
-    setToast({ visible: true, amount });
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
-      setToast((t) => ({ ...t, visible: false }));
-    }, TOAST_DURATION_MS);
+  const handleConfirm = async (amount: number) => {
+    try {
+      setSheetVisible(false);
+      
+      // Save water log to database
+      await logWater(amount);
+      
+      // Success triggers
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await fetchWaterIntake();
+      
+      setToast({ visible: true, amount });
+      setTimeout(() => {
+        setToast((t) => ({ ...t, visible: false }));
+      }, TOAST_DURATION_MS);
+    } catch (err) {
+      console.log("[WATER-LOG] Error logging water intake:", err);
+    }
   };
 
   return (
@@ -96,7 +122,7 @@ export default function WaterLogScreen() {
           <WaterCircle
             percentage={percentage}
             intake={intake}
-            goal={WATER_LOG_GOAL_ML}
+            goal={goal}
           />
         </View>
 

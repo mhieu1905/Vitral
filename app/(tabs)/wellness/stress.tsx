@@ -26,9 +26,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../utils/supabase';
+import { API_BASE_URL } from '../../../constants/api';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 const { width: SW } = Dimensions.get('window');
 
 // ─── Colors ───────────────────────────────────────────────────────────────────

@@ -1,9 +1,11 @@
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, Minus, Plus } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Pressable,
   ScrollView,
@@ -16,6 +18,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MacroBar, NutritionTopBar } from "@/components/nutrition";
 import { AVOCADO_TOAST } from "@/constants/nutrition";
+import {
+  getFoodDetails,
+  getFoodHeroImage,
+  logFood,
+} from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const W = Dimensions.get("window").width;
@@ -23,7 +30,110 @@ const VITAMIN_WIDTH = (W - 24 * 2 - 25 * 2 - 32) / 2;
 
 export default function FoodDetail() {
   const router = useRouter();
-  const food = AVOCADO_TOAST;
+  const params = useLocalSearchParams<{ name?: string, meal?: string }>();
+  const foodName = params.name || "Avocado & Sourdough";
+
+  const [foodDetails, setFoodDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        setLoading(true);
+        const res = await getFoodDetails(foodName);
+        if (active) {
+          setFoodDetails(res);
+        }
+      } catch (err) {
+        console.log("[DETAIL] Error fetching food details:", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, [foodName]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={c.sageDark} />
+      </SafeAreaView>
+    );
+  }
+
+  const food = foodDetails || AVOCADO_TOAST;
+  const heroImage = getFoodHeroImage(food.title);
+
+  // Stepper responsive scaling for premium micro-interactions
+  const calorieValue = Math.round(food.totalKcal * qty);
+  const displayMacros = food.macros.map((m: any) => {
+    const numericPart = parseFloat(m.value) || 0;
+    const unit = m.value.replace(/[\d\.]/g, "");
+    return {
+      ...m,
+      value: `${Math.round(numericPart * qty)}${unit}`,
+      pct: Math.min(m.pct * qty, 1.0)
+    };
+  });
+
+  const displayFactGroups = food.factGroups.map((group: any) => ({
+    rows: group.rows.map((row: any) => {
+      // Don't scale Cholesterol / Sodium / Sugars if 0
+      const numericPart = parseFloat(row.value) || 0;
+      const unit = row.value.replace(/[\d\.]/g, "");
+      return {
+        ...row,
+        value: `${Math.round(numericPart * qty)}${unit}`
+      };
+    })
+  }));
+
+  const handleAddLog = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      const baseCarbs = parseFloat(food.macros.find((m: any) => m.label.toLowerCase().includes("carb"))?.value) || 0;
+      const baseProtein = parseFloat(food.macros.find((m: any) => m.label.toLowerCase().includes("protein"))?.value) || 0;
+      const baseFat = parseFloat(food.macros.find((m: any) => m.label.toLowerCase().includes("fat"))?.value) || 0;
+
+      const rawMeal = params.meal;
+      let mealType = (rawMeal && rawMeal !== "undefined" && rawMeal !== "null") ? rawMeal : "";
+      if (!mealType) {
+        mealType = "breakfast";
+        const hour = new Date().getHours();
+        if (hour >= 11 && hour < 16) mealType = "lunch";
+        else if (hour >= 16 && hour < 19) mealType = "snacks";
+        else if (hour >= 19 || hour < 5) mealType = "dinner";
+      }
+
+      console.log("[DETAIL SCREEN] logging food:", food.title, "mealType:", mealType);
+
+      await logFood({
+        food_name: food.title,
+        meal_type: mealType,
+        calories: food.totalKcal * qty,
+        protein_g: baseProtein * qty,
+        carbs_g: baseCarbs * qty,
+        fat_g: baseFat * qty,
+        serving_size: food.servingValue,
+        serving_qty: qty
+      });
+
+      router.replace({
+        pathname: "/nutrition/food-log-confirm",
+        params: { preset: "detail", meal: mealType },
+      });
+    } catch (err) {
+      console.log("[DETAIL] Error logging food to database:", err);
+    }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -33,7 +143,7 @@ export default function FoodDetail() {
         showsVerticalScrollIndicator={false}
       >
         <View style={s.hero}>
-          <Image source={food.heroImage} style={s.heroImg} contentFit="cover" />
+          <Image source={heroImage} style={s.heroImg} contentFit="cover" />
           <LinearGradient
             colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]}
             style={s.heroGradient}
@@ -47,7 +157,7 @@ export default function FoodDetail() {
         <View style={s.calorieCard}>
           <Text style={s.totalEnergyLabel}>TOTAL ENERGY</Text>
           <View style={s.calorieRow}>
-            <Text style={s.calorieValue}>{food.totalKcal}</Text>
+            <Text style={s.calorieValue}>{calorieValue}</Text>
             <Text style={s.calorieUnit}>kcal</Text>
           </View>
         </View>
@@ -58,7 +168,7 @@ export default function FoodDetail() {
             <Text style={s.macroHeaderSub}>Per Serving</Text>
           </View>
 
-          {food.macros.map((m, i) => (
+          {displayMacros.map((m: any, i: number) => (
             <MacroBar
               key={m.label}
               label={m.label}
@@ -81,13 +191,27 @@ export default function FoodDetail() {
             <Text style={s.servingValue}>{food.servingValue}</Text>
           </View>
           <View style={s.stepper}>
-            <View style={s.stepperBtnMinus}>
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={s.stepperBtnMinus}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setQty(q => Math.max(q - 1, 1));
+              }}
+            >
               <Minus size={11} color={c.textMuted} strokeWidth={2.5} />
-            </View>
-            <Text style={s.stepperCount}>1</Text>
-            <View style={s.stepperBtnPlus}>
+            </TouchableOpacity>
+            <Text style={s.stepperCount}>{qty}</Text>
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={s.stepperBtnPlus}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setQty(q => q + 1);
+              }}
+            >
               <Plus size={11} color="#FFFFFF" strokeWidth={2.5} />
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -97,7 +221,7 @@ export default function FoodDetail() {
         </View>
 
         <View style={s.factsCard}>
-          {food.factGroups.map((group, gi) => {
+          {displayFactGroups.map((group: any, gi: number) => {
             const isLast = gi === food.factGroups.length - 1;
             return (
               <View
@@ -111,7 +235,7 @@ export default function FoodDetail() {
                   },
                 ]}
               >
-                {group.rows.map((row, ri) => (
+                {group.rows.map((row: any, ri: number) => (
                   <View
                     key={`g${gi}r${ri}`}
                     style={row.sub ? s.factSubRow : s.factMainRow}
@@ -129,7 +253,7 @@ export default function FoodDetail() {
           })}
 
           <View style={s.vitaminsGrid}>
-            {food.vitamins.map((v) => (
+            {food.vitamins.map((v: any) => (
               <View key={v.label} style={s.vitaminItem}>
                 <Text style={s.vitaminLabel}>{v.label}</Text>
                 <Text style={s.vitaminValue}>{v.value}</Text>
@@ -144,7 +268,13 @@ export default function FoodDetail() {
         titleAlign="center"
         height={64}
         backgroundColor="rgba(253,248,243,0.8)"
-        onBack={() => router.replace("/nutrition/food-log")}
+        onBack={() => {
+          const m = params.meal && params.meal !== "undefined" && params.meal !== "null" ? params.meal : "";
+          router.replace({
+            pathname: "/nutrition/add-food",
+            params: m ? { meal: m } : undefined
+          });
+        }}
         rightSlot={
           <Pressable hitSlop={10}>
             <Heart size={19} color={c.sageDark} strokeWidth={2} />
@@ -160,13 +290,7 @@ export default function FoodDetail() {
         <TouchableOpacity
           activeOpacity={0.9}
           style={s.addBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.replace({
-              pathname: "/nutrition/food-log-confirm",
-              params: { preset: "detail" },
-            });
-          }}
+          onPress={handleAddLog}
         >
           <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
           <Text style={s.addBtnLabel}>Add to Log</Text>

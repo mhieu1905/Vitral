@@ -243,9 +243,17 @@ def get_supabase_client() -> SupabaseClient:
         os.environ.get("EXPO_PUBLIC_SUPABASE_KEY", "")
     )
     # Service role key — dùng để verify user JWT tokens
-    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    service_role_key = (
+        os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or
+        os.environ.get("SUPABASE_SERVICE_KEY", "")
+    )
 
-    print(f"[backend] SUPABASE_URL loaded={bool(supabase_url)} SUPABASE_KEY loaded={bool(supabase_key)}")
+    print(
+        f"[backend] SUPABASE_URL loaded={bool(supabase_url)} "
+        f"SUPABASE_KEY loaded={bool(supabase_key)} "
+        f"service_role_key loaded={bool(service_role_key)} "
+        f"key_prefix={service_role_key[:10] if service_role_key else 'None'}"
+    )
 
     if not supabase_url or not supabase_key:
         raise RuntimeError(

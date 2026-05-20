@@ -1,12 +1,13 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronRight,
   Leaf,
   Plus,
   ScanBarcode,
   Search,
+  Utensils,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Pressable,
@@ -18,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 
 import BottomNav from "@/components/bottom-nav";
 import {
@@ -31,6 +33,7 @@ import {
   NUTRIENT_FOCUS,
   RECENT_FOODS,
 } from "@/constants/nutrition";
+import { getFoodPresets, getFoodImage } from "@/services/nutritionService";
 import { nutritionColors as c, nutritionFonts as f } from "@/theme/nutrition";
 
 const W = Dimensions.get("window").width;
@@ -38,7 +41,90 @@ const BalanceIcon = ADD_FOOD_CALORIE_BALANCE.Icon;
 
 export default function AddFood() {
   const router = useRouter();
-  const [active, setActive] = React.useState<string>("All");
+  const { meal: rawMeal } = useLocalSearchParams<{ meal?: string }>();
+  const meal = (rawMeal && rawMeal !== "undefined" && rawMeal !== "null") ? rawMeal : undefined;
+  console.log("[ADD-FOOD SCREEN] meal parameter received:", meal);
+  const [active, setActive] = useState<string>("Recent");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [presets, setPresets] = useState<any[]>([]);
+
+  // Load presets dynamically from Backend
+  useEffect(() => {
+    async function loadPresets() {
+      try {
+        const res = await getFoodPresets();
+        const arr = Object.keys(res).map((key) => {
+          const item = res[key];
+          return {
+            title: item.title,
+            meta: `${item.totalKcal} kcal • ${item.servingValue}`,
+            category: item.subtitle.toLowerCase().includes("breakfast") || item.title.toLowerCase().includes("toast") || item.title.toLowerCase().includes("yogurt") 
+              ? "Breakfast" 
+              : item.title.toLowerCase().includes("latte") || item.title.toLowerCase().includes("coffee")
+              ? "Drinks"
+              : "Snacks",
+            Icon: Utensils,
+            iconBg: c.sageBg10,
+            iconColor: c.sageDark
+          };
+        });
+        setPresets(arr);
+      } catch (err) {
+        console.log("[ADD_FOOD] Error loading presets:", err);
+      }
+    }
+    loadPresets();
+  }, []);
+
+  // Filter based on search query and category tab
+  const getDisplayedFoods = () => {
+    // If searching, always search across ALL foods
+    if (searchQuery.trim().length > 0) {
+      let list = [...RECENT_FOODS];
+      presets.forEach(p => {
+        if (!list.some(item => item.title.toLowerCase() === p.title.toLowerCase())) {
+          list.push(p);
+        }
+      });
+
+      const query = searchQuery.toLowerCase();
+      list = list.filter(item => item.title.toLowerCase().includes(query));
+      
+      // Add custom food option at the top!
+      const customItem = {
+        title: searchQuery.trim(),
+        meta: "✨ Custom Food Entry • Tap to adjust & log",
+        Icon: Leaf,
+        iconBg: c.sageBg20,
+        iconColor: c.sageDark,
+        isCustom: true
+      };
+      
+      // Check if exact match exists, if not add custom item
+      const exactMatch = list.some(item => item.title.toLowerCase() === query);
+      if (!exactMatch) {
+        list.unshift(customItem);
+      }
+      return list;
+    }
+
+    // Default view with no search query active
+    if (active === "Recent") {
+      // Recent tab shows ONLY the 3 representative typical foods
+      return RECENT_FOODS;
+    } else {
+      // All tab shows all items (RECENT_FOODS + presets merged)
+      let list = [...RECENT_FOODS];
+      presets.forEach(p => {
+        if (!list.some(item => item.title.toLowerCase() === p.title.toLowerCase())) {
+          list.push(p);
+        }
+      });
+      return list;
+    }
+  };
+
+  const displayedFoods = getDisplayedFoods();
 
   return (
     <SafeAreaView style={s.safe}>
@@ -50,13 +136,27 @@ export default function AddFood() {
         <View style={s.searchInputWrap}>
           <Search size={18} color={c.textMuted} strokeWidth={2} />
           <TextInput
-            placeholder="Search food or scan barcode"
+            placeholder="Search food or enter custom food name..."
             placeholderTextColor="rgba(115,121,112,0.6)"
             style={s.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 ? (
+            <TouchableOpacity 
+              hitSlop={10} 
+              onPress={() => setSearchQuery("")}
+              style={{ marginRight: 8 }}
+            >
+              <Text style={{ fontFamily: f.displayMed, fontSize: 13, color: c.textMuted }}>Clear</Text>
+            </TouchableOpacity>
+          ) : null}
           <Pressable
             hitSlop={10}
-            onPress={() => router.push("/nutrition/scan-food")}
+            onPress={() => router.push({
+              pathname: "/nutrition/scan-food",
+              params: meal ? { meal } : undefined
+            })}
             style={({ pressed }) => [s.scanBtn, pressed && { opacity: 0.5 }]}
           >
             <ScanBarcode size={22} color={c.sageDark} strokeWidth={2} />
@@ -69,13 +169,17 @@ export default function AddFood() {
           contentContainerStyle={s.chipsRow}
           style={s.chipsScroll}
         >
-          {ADD_FOOD_FILTERS.map((label) => {
+          {["Recent", "All"].map((label) => {
             const isActive = label === active;
             return (
               <TouchableOpacity
                 key={label}
                 activeOpacity={0.85}
-                onPress={() => setActive(label)}
+                onPress={() => {
+                  setActive(label);
+                  // Clear search query when switching tabs to avoid confusion
+                  setSearchQuery("");
+                }}
                 style={[s.chip, isActive ? s.chipActive : s.chipInactive]}
               >
                 <Text
@@ -92,25 +196,51 @@ export default function AddFood() {
         </ScrollView>
 
         <View style={s.recentFoodsSection}>
-          <Text style={s.sectionTitle}>Recent Foods</Text>
+          <Text style={s.sectionTitle}>
+            {searchQuery.trim().length > 0 ? "Search Results" : "Recent & Recommended Foods"}
+          </Text>
 
           <View style={s.foodList}>
-            {RECENT_FOODS.map((item) => {
-              const Icon = item.Icon;
+            {displayedFoods.map((item) => {
+              const Icon = item.Icon || Utensils;
               return (
                 <TouchableOpacity
                   key={item.title}
                   activeOpacity={0.9}
-                  style={s.foodCard}
-                  onPress={() => router.push("/nutrition/food-detail")}
+                  style={{
+                    ...s.foodCard,
+                    backgroundColor: item.isCustom ? "#F4F7F3" : c.card,
+                    borderColor: item.isCustom ? "rgba(75, 101, 70, 0.25)" : "transparent",
+                    borderWidth: item.isCustom ? 1.5 : 0,
+                    // Disable shadow and elevation for custom cards to prevent React Native transparency glitches
+                    shadowOpacity: item.isCustom ? 0 : 0.03,
+                    elevation: item.isCustom ? 0 : 1,
+                    paddingVertical: item.isCustom ? 16 : 16,
+                  }}
+                  onPress={() => router.push({
+                    pathname: "/nutrition/food-detail",
+                    params: { name: item.title, meal: meal }
+                  })}
                 >
                   <View
-                    style={[s.foodIconBox, { backgroundColor: item.iconBg }]}
+                    style={[
+                      s.foodIconBox, 
+                      { 
+                        backgroundColor: item.isCustom ? "rgba(168, 197, 160, 0.2)" : (item.iconBg || c.sageBg10), 
+                        overflow: "hidden" 
+                      }
+                    ]}
                   >
-                    <Icon size={22} color={item.iconColor} strokeWidth={2} />
+                    <Image
+                      source={getFoodImage(item.title)}
+                      style={{ width: "100%", height: "100%", borderRadius: 16 }}
+                      contentFit="cover"
+                    />
                   </View>
                   <View style={s.foodTextWrap}>
-                    <Text style={s.foodTitle}>{item.title}</Text>
+                    <Text style={[s.foodTitle, item.isCustom && { fontFamily: f.displayBold, color: c.sageDark }]}>
+                      {item.title}
+                    </Text>
                     <Text style={s.foodMeta}>{item.meta}</Text>
                   </View>
                   <View style={s.foodAddBtn}>
@@ -119,6 +249,14 @@ export default function AddFood() {
                 </TouchableOpacity>
               );
             })}
+            
+            {displayedFoods.length === 0 ? (
+              <View style={{ padding: 24, alignItems: "center" }}>
+                <Text style={{ fontFamily: f.display, fontSize: 14, color: c.textMuted }}>
+                  No foods found matching "{searchQuery}"
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
