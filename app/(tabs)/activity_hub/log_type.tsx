@@ -4,15 +4,15 @@ import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 /**
@@ -39,13 +39,13 @@ const COLORS = {
 };
 
 const ACTIVITY_TYPES = [
-  { id: '1', label: 'Running', sub: 'CARDIO/ENDURANCE', icon: 'run', route: '/activity_hub/log_detail' },
+  { id: '1', label: 'Running', sub: 'CARDIO/ENDURANCE', icon: 'run' },
   { id: '2', label: 'Cycling', sub: 'HIGH INTENSITY', icon: 'bike' },
-  { id: '3', label: 'Swimming', sub: 'FULL BODY', icon: 'swim', active: true },
+  { id: '3', label: 'Swimming', sub: 'FULL BODY', icon: 'swim' },
   { id: '4', label: 'Yoga', sub: 'FLEXIBILITY', icon: 'meditation' },
-  { id: '5', label: 'Strength', sub: 'RESISTANCE', icon: 'weight-lifter' },
-  { id: '6', label: 'HIIT', sub: 'PEAK VO2 MAX', icon: 'lightning-bolt' },
-];
+  { id: '5', label: 'Gym', sub: 'RESISTANCE', icon: 'weight-lifter' },
+  { id: '6', label: 'Walking', sub: 'LOW IMPACT', icon: 'walk' },
+]
 
 const SafeImage = ({ uri, style }) => {
   const [loading, setLoading] = useState(true);
@@ -68,11 +68,12 @@ export default function CombinedActivityView() {
     router.replace(route);
   };
 
-  const handleActivityPress = (item: any) => {
-    if (item.route) {
-      router.push(item.route);
-    }
-  };
+ const handleActivityPress = (item: any) => {
+  router.push({
+    pathname: '/activity_hub/log_detail',
+    params: { type: item.label }
+  })
+}
 
   return (
     <SafeAreaView style={styles.container}>
