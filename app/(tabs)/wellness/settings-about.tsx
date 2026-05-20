@@ -2,14 +2,9 @@ import BottomNav from '@/components/bottom-nav';
 import Slider from '@react-native-community/slider';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 type Theme = 'light' | 'dark';

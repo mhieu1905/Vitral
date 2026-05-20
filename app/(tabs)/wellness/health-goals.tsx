@@ -1,15 +1,10 @@
 import BottomNav from "@/components/bottom-nav";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+  Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View
+} from 'react-native';
 
 const ECOSYSTEM = [
   {

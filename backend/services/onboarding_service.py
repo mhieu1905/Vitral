@@ -53,6 +53,17 @@ class OnboardingService:
         
         if not response.data:
             raise Exception("Failed to create user health profile in database.")
+
+        # Auto-insert initial weight into weight_history for tracking from day one
+        try:
+            self.db.table("weight_history").insert({
+                "user_id": str(profile_data.user_id),
+                "weight": profile_data.weight_kg,
+            }).execute()
+            print(f"[backend] Initial weight record created: {profile_data.weight_kg}kg")
+        except Exception as weight_err:
+            print(f"[backend] Warning: Could not create initial weight record: {weight_err}")
+            # Don't fail profile creation if weight history insert fails
             
         return UserHealthProfile(**response.data[0])
 

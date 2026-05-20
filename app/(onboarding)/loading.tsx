@@ -9,6 +9,8 @@ import {
   Easing,
   StatusBar,
 } from "react-native";
+import { supabase } from "../../utils/supabase";
+import { healthProfileService } from "../../services/healthProfileService";
 
 const { width } = Dimensions.get("window");
 
@@ -150,8 +152,27 @@ export default function LoadingScreen() {
       useNativeDriver: true,
     }).start();
 
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const profile = await healthProfileService.getUserHealthProfile(session.user.id);
+          if (profile) {
+            router.replace("/(tabs)/dashboard");
+          } else {
+            router.replace("/(onboarding)/goal-selection");
+          }
+        } else {
+          router.replace("/(onboarding)/welcome");
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+        router.replace("/(onboarding)/welcome");
+      }
+    };
+
     const timer = setTimeout(() => {
-      router.replace("/(onboarding)/welcome");
+      checkSession();
     }, 2000);
 
     return () => clearTimeout(timer);

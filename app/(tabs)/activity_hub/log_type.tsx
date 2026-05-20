@@ -3,16 +3,9 @@ import BottomNav from '@/components/bottom-nav';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 
 /**

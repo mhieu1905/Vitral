@@ -16,6 +16,7 @@ from routers import activities, summary
 from routes.stress import router as stress_router  # Đã bỏ 'backend.' ở đầu vì dùng sys.path ở trên
 from routes.nutrition import router as nutrition_router
 from backend.routes.recommend import router as recommend_router
+from routes.weight_history import router as weight_history_router
 
 app = FastAPI()
 
@@ -35,6 +36,7 @@ app.include_router(recommend_router)
 app.include_router(activities.router, prefix="/api/activities", tags=["Activities"]) # Thêm router activities để test log calo lúc nãy
 app.include_router(summary.router, prefix="/api/summary", tags=["Summary"])
 app.include_router(nutrition_router, prefix="/api/nutrition")
+app.include_router(weight_history_router)
 
 @app.get("/")
 def read_root():

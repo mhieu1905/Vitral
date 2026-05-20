@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, Ellipse, Path, Svg } from "react-native-svg";
 import { supabase } from '../../utils/supabase';
 
-import { onboardingApi } from '../../services/onboardingApi';
+import { healthProfileService } from '../../services/healthProfileService';
 
 // --- Icon Components ---
 const EmailIcon = () => (
@@ -203,19 +203,19 @@ export default function LoginScreen() {
     try {
       // Check if user has already completed onboarding
       if (authData?.user) {
-        const profile = await onboardingApi.getProfile(authData.user.id);
+        const profile = await healthProfileService.getUserHealthProfile(authData.user.id);
         if (profile) {
           router.replace("/(tabs)/dashboard");
         } else {
-          router.push("/(onboarding)/goal-selection");
+          router.replace("/(onboarding)/goal-selection");
         }
       } else {
-        router.push("/(onboarding)/goal-selection");
+        router.replace("/(onboarding)/goal-selection");
       }
     } catch (apiError) {
       console.error('Profile fetch error:', apiError);
       // Fallback to onboarding if error occurs
-      router.push("/(onboarding)/goal-selection");
+      router.replace("/(onboarding)/goal-selection");
     } finally {
       setLoading(false);
     }

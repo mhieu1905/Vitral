@@ -1,15 +1,9 @@
 import { BarChart2, Flame, Route } from "lucide-react-native";
 import React from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+  Dimensions, Image, ScrollView, StatusBar, StyleSheet, Text, View
+} from 'react-native';
 import Svg from "react-native-svg";
 import BottomNav from "@/components/bottom-nav";
 

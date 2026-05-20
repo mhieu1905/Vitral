@@ -1,15 +1,10 @@
 import BottomNav from "@/components/bottom-nav";
 import { Heart } from "lucide-react-native";
 import React from "react";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+  Dimensions, ScrollView, StatusBar, StyleSheet, Text, View
+} from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 
 const { width } = Dimensions.get("window");
