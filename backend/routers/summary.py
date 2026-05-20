@@ -29,7 +29,7 @@ def get_user_id(authorization: str) -> str:
         user = get_supabase().auth.get_user(token)
         return user.user.id
     except:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 # CORE 3: Summary hôm nay
 @router.get("/today")

@@ -49,7 +49,7 @@ export default function ActivityHome() {
       setSummary(summaryData);
       setRecentSessions(historyData.data.slice(0, 3));
     } catch (e) {
-      console.log('Lỗi load data:', e);
+      console.log('Error loading data:', e);
     } finally {
       setLoading(false);
     }
