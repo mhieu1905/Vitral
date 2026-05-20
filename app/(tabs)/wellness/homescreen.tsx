@@ -131,6 +131,15 @@ const router = useRouter(); // ← thêm dòng này
             subtitleColor="#888780"
             onPress={() => router.push('/(tabs)/wellness/profile')}
           />
+          <QuickCard
+  emoji="✨"
+  title="For You"
+  subtitle="Recommendations"
+  bgColor="#E8E0F0"
+  textColor="#6B3FA0"
+  subtitleColor="#9B7EC8"
+  onPress={() => router.push('/(tabs)/wellness/recommend')}
+/>
         </View>
 
         {/* Today's Focus Banner */}
