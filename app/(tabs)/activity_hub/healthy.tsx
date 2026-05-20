@@ -35,7 +35,7 @@ export default function RecoveryAndBiometrics() {
       setSummary(summaryData);
       setHistory(historyData.data || []);
     } catch (e) {
-      console.log('Lỗi:', e);
+      console.log('Error:', e);
     } finally {
       setLoading(false);
     }
@@ -49,8 +49,8 @@ export default function RecoveryAndBiometrics() {
 
   // Tính strain level
   const strainLevel = summary.total_calories > 400
-    ? 'Cao' : summary.total_calories > 200
-    ? 'Trung bình' : 'Thấp';
+    ? 'High' : summary.total_calories > 200
+    ? 'Medium' : 'Low';
 
   // Lấy 7 activity gần nhất để vẽ chart
   const chartData = history.slice(0, 7).reverse();
@@ -71,8 +71,8 @@ export default function RecoveryAndBiometrics() {
         <View style={styles.recoveryCard}>
           <View style={styles.recoveryHeader}>
             <View>
-              <Text style={styles.label}>TRẠNG THÁI</Text>
-              <Text style={styles.headline}>Điểm phục hồi</Text>
+              <Text style={styles.label}>STATUS</Text>
+              <Text style={styles.headline}>Recovery point</Text>
             </View>
             <View style={[styles.scoreCircle, {
               borderColor: recoveryScore > 70 ? '#526148' : recoveryScore > 40 ? '#D4A020' : '#D4A5A5'
@@ -83,24 +83,24 @@ export default function RecoveryAndBiometrics() {
 
           <Text style={styles.recoveryDesc}>
             {recoveryScore > 70
-              ? 'Cơ thể bạn đang trong trạng thái tốt. Tiếp tục duy trì thói quen luyện tập!'
+              ? 'Your body is in a good state. Keep up the good work!'
               : recoveryScore > 40
-              ? 'Cơ thể đang phục hồi. Hãy nghỉ ngơi đủ giấc và uống đủ nước.'
-              : 'Hôm nay chưa có hoạt động. Hãy bắt đầu với 30 phút đơn giản!'}
+              ? 'Your body is recovering. Make sure to get enough rest and stay hydrated.'
+              : 'You haven\'t had any activity today. Try starting with a 30-minute workout!'}
           </Text>
 
           <View style={styles.miniMetricsRow}>
             <View style={styles.miniCard}>
-              <Text style={styles.miniLabel}>CĂNG THẲNG</Text>
+              <Text style={styles.miniLabel}>STRAIN LEVEL</Text>
               <Text style={styles.miniValue}>{loading ? '--' : strainLevel}</Text>
             </View>
             <View style={styles.miniCard}>
-              <Text style={styles.miniLabel}>THỜI GIAN TẬP</Text>
-              <Text style={styles.miniValue}>{loading ? '--' : `${summary.total_duration} phút`}</Text>
+              <Text style={styles.miniLabel}>WORKOUT DURATION</Text>
+              <Text style={styles.miniValue}>{loading ? '--' : `${summary.total_duration} minutes`}</Text>
             </View>
             <View style={styles.miniCard}>
-              <Text style={styles.miniLabel}>SỐ BUỔI</Text>
-              <Text style={styles.miniValue}>{loading ? '--' : `${summary.activity_count} buổi`}</Text>
+              <Text style={styles.miniLabel}>NUMBER OF SESSIONS</Text>
+              <Text style={styles.miniValue}>{loading ? '--' : `${summary.activity_count} sessions`}</Text>
             </View>
           </View>
         </View>
@@ -109,21 +109,21 @@ export default function RecoveryAndBiometrics() {
         <View style={styles.trendsCard}>
           <View style={styles.trendsHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Xu hướng hoạt động</Text>
-              <Text style={styles.sectionSubtitle}>{history.length} buổi gần nhất</Text>
+              <Text style={styles.sectionTitle}>Activity Trends</Text>
+              <Text style={styles.sectionSubtitle}>{history.length} recent sessions</Text>
             </View>
             <View style={styles.avgContainer}>
               <Text style={styles.avgValue}>{loading ? '--' : avgCalories}</Text>
-              <Text style={styles.avgLabel}>CALO TRUNG BÌNH</Text>
+              <Text style={styles.avgLabel}>AVERAGE CALORIES</Text>
             </View>
           </View>
 
           {/* Bar Chart thật */}
           <View style={styles.chartContainer}>
             {loading ? (
-              <Text style={{ color: '#9a9080', alignSelf: 'center' }}>Đang tải...</Text>
+              <Text style={{ color: '#9a9080', alignSelf: 'center' }}>Loading...</Text>
             ) : chartData.length === 0 ? (
-              <Text style={{ color: '#9a9080', alignSelf: 'center' }}>Chưa có dữ liệu</Text>
+              <Text style={{ color: '#9a9080', alignSelf: 'center' }}>No data available</Text>
             ) : (
               chartData.map((activity, index) => {
                 const barHeight = Math.max(
@@ -155,7 +155,7 @@ export default function RecoveryAndBiometrics() {
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="fire" size={28} color="#D4A5A5" />
             <Text style={styles.statValue}>{loading ? '--' : summary.total_calories}</Text>
-            <Text style={styles.statLabel}>KCAL HÔM NAY</Text>
+            <Text style={styles.statLabel}>KCAL TODAY</Text>
             <View style={styles.statBar}>
               <View style={[styles.statBarFill, {
                 width: `${Math.min((summary.total_calories / 500) * 100, 100)}%`,
@@ -167,7 +167,7 @@ export default function RecoveryAndBiometrics() {
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="clock-outline" size={28} color="#B5C8E8" />
             <Text style={styles.statValue}>{loading ? '--' : summary.total_duration}</Text>
-            <Text style={styles.statLabel}>PHÚT TẬP</Text>
+            <Text style={styles.statLabel}>MINUTES EXERCISED</Text>
             <View style={styles.statBar}>
               <View style={[styles.statBarFill, {
                 width: `${Math.min((summary.total_duration / 60) * 100, 100)}%`,
@@ -179,17 +179,17 @@ export default function RecoveryAndBiometrics() {
 
         {/* SECTION 4: RECENT ACTIVITIES */}
         <View style={styles.recentCard}>
-          <Text style={styles.sectionTitle}>Hoạt động gần đây</Text>
+          <Text style={styles.sectionTitle}>Recent Activities</Text>
           <Text style={styles.sectionSubtitle} style={{ marginBottom: 16 }}>
-            Tổng {history.length} buổi đã ghi nhận
+            Total {history.length} sessions recorded
           </Text>
 
           {loading ? (
-            <Text style={{ color: '#9a9080', textAlign: 'center', padding: 20 }}>Đang tải...</Text>
+            <Text style={{ color: '#9a9080', textAlign: 'center', padding: 20 }}>Loading...</Text>
           ) : history.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="run" size={40} color="#EBE7DE" />
-              <Text style={styles.emptyText}>Chưa có hoạt động nào</Text>
+              <Text style={styles.emptyText}>No activities yet</Text>
             </View>
           ) : (
             history.slice(0, 5).map((activity, index) => (
@@ -210,7 +210,7 @@ export default function RecoveryAndBiometrics() {
                   <View>
                     <Text style={styles.activityName}>{activity.activity_type}</Text>
                     <Text style={styles.activityMeta}>
-                      {activity.duration} phút • {activity.intensity}
+                      {activity.duration} minutes • {activity.intensity}
                     </Text>
                   </View>
                 </View>

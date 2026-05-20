@@ -40,7 +40,7 @@ def get_user_id(authorization: str) -> str:
         user = get_supabase().auth.get_user(token)
         return user.user.id
     except:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 # CORE 1: Log activity
 @router.post("/log")
@@ -58,9 +58,9 @@ def log_activity(body: ActivityCreate, authorization: str = Header(...)):
     }).execute()
 
     if not result.data:
-        raise HTTPException(status_code=400, detail="Lưu thất bại")
+        raise HTTPException(status_code=400, detail="Failed to save")
 
-    return {"message": "Lưu thành công!", "data": result.data[0]}
+    return {"message": "Successfully saved!", "data": result.data[0]}
 
 # ✅ THÊM MỚI: Test không cần token
 
@@ -110,5 +110,5 @@ def get_detail(activity_id: str, authorization: str = Header(...)):
         .execute()
 
     if not result.data:
-        raise HTTPException(status_code=404, detail="Không tìm thấy")
+        raise HTTPException(status_code=404, detail="Activity not found")
     return {"data": result.data[0]}

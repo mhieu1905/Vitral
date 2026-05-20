@@ -37,7 +37,7 @@ export default function LogDetail() {
       const data = await getExercises(activityType, inten)
       setExercises(data.exercises || [])
     } catch (e) {
-      console.log('Lỗi load exercises:', e)
+      console.log('Error loading exercises:', e)
       setExercises([])
     } finally {
       setLoadingExercises(false)
@@ -136,9 +136,9 @@ export default function LogDetail() {
           <Text style={styles.sectionLabel}>INTENSITY</Text>
           <View style={styles.intensityRow}>
             {[
-              { key: 'low', label: 'LIGHT' },
-              { key: 'medium', label: 'MODERATE' },
-              { key: 'high', label: 'INTENSE' },
+              { key: 'low', label: 'LOW' },
+              { key: 'medium', label: 'MEDIUM' },
+              { key: 'high', label: 'HIGH' },
             ].map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -168,7 +168,7 @@ export default function LogDetail() {
             <Text style={styles.sectionLabel}>EXERCISE LIST</Text>
             <View style={[styles.intensityBadge, { backgroundColor: intensityColor[intensity] + '40' }]}>
               <Text style={[styles.intensityBadgeText, { color: '#39382F' }]}>
-                {intensity === 'low' ? 'LIGHT' : intensity === 'medium' ? 'MODERATE' : 'INTENSE'}
+                {intensity === 'low' ? 'LOW' : intensity === 'medium' ? 'MEDIUM' : 'HIGH'}
               </Text>
             </View>
           </View>

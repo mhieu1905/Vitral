@@ -59,7 +59,7 @@ export default function FullActivityHub() {
       setSummary(summaryData);
       setRecentSessions(historyData.data.slice(0, 3));
     } catch (e) {
-      console.log('Lỗi load data:', e);
+      console.log('Error loading data:', e);
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ export default function FullActivityHub() {
           <View style={styles.metricCard}>
             <View style={styles.metricHeader}>
               <MaterialCommunityIcons name="fire" size={18} color={COLORS.accent} />
-              <Text style={styles.metricLabel}>KCAL HÔM NAY</Text>
+              <Text style={styles.metricLabel}>KCAL TODAY</Text>
             </View>
             <Text style={styles.metricValue}>
               {loading ? '--' : Math.round(summary.total_calories)}

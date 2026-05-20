@@ -32,7 +32,7 @@ export default function ActivitySummary() {
       const data = await getTodaySummary();
       setSummary(data);
     } catch (e) {
-      console.log('Lỗi load summary:', e);
+      console.log('Error loading summary:', e);
     } finally {
       setLoading(false);
     }
