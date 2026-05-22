@@ -1,4 +1,10 @@
 import BottomNav from "@/components/bottom-nav";
+import { healthProfileService } from "@/services/healthProfileService";
+import { tdeeService } from "@/services/tdeeService";
+import type { HealthProfile } from "@/types/healthProfile";
+import { GOAL_LABELS } from "@/types/healthProfile";
+import type { NutritionTarget } from "@/types/tdee";
+import { supabase } from "@/utils/supabase";
 import { useRouter } from "expo-router";
 import {
   AreaChart,
@@ -24,12 +30,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "@/utils/supabase";
-import { healthProfileService } from "@/services/healthProfileService";
-import { tdeeService } from "@/services/tdeeService";
-import type { NutritionTarget } from "@/types/tdee";
-import { GOAL_LABELS } from "@/types/healthProfile";
-import type { HealthProfile } from "@/types/healthProfile";
 
 const COLORS = {
   background: "#FFFBF8",
@@ -45,20 +45,23 @@ const COLORS = {
 
 export default function DashboardNative() {
   const router = useRouter();
-  const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
+  const [nutritionTarget, setNutritionTarget] =
+    useState<NutritionTarget | null>(null);
   const [profile, setProfile] = useState<HealthProfile | null>(null);
   const [userName, setUserName] = useState("there");
   const [targetLoading, setTargetLoading] = useState(true);
 
   const loadNutritionTarget = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserName(
         user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "there"
+          user.user_metadata?.name ||
+          user.email?.split("@")[0] ||
+          "there",
       );
       const hp = await healthProfileService.getUserHealthProfile(user.id);
       if (hp) {
@@ -72,7 +75,9 @@ export default function DashboardNative() {
     }
   }, []);
 
-  useEffect(() => { loadNutritionTarget(); }, [loadNutritionTarget]);
+  useEffect(() => {
+    loadNutritionTarget();
+  }, [loadNutritionTarget]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -157,7 +162,7 @@ export default function DashboardNative() {
         <TouchableOpacity
           activeOpacity={0.9}
           style={styles.waterCard}
-          onPress={() => router.push("/dashboard/water-tracker")}
+          onPress={() => router.push("/nutrition/water-log")}
         >
           <View style={styles.waterIconBox}>
             <Droplets size={22} color="#7B5556" />
@@ -284,9 +289,19 @@ function NutritionTargetsCard({
   if (!target || !profile) return null;
 
   const macros = [
-    { label: "Protein", grams: target.protein_target, color: "#6B9E62", bg: "#E3F1DF" },
-    { label: "Carbs",   grams: target.carbs_target,   color: "#C4943A", bg: "#FDF5E6" },
-    { label: "Fat",     grams: target.fat_target,      color: "#A34A4A", bg: "#FDF1EB" },
+    {
+      label: "Protein",
+      grams: target.protein_target,
+      color: "#6B9E62",
+      bg: "#E3F1DF",
+    },
+    {
+      label: "Carbs",
+      grams: target.carbs_target,
+      color: "#C4943A",
+      bg: "#FDF5E6",
+    },
+    { label: "Fat", grams: target.fat_target, color: "#A34A4A", bg: "#FDF1EB" },
   ];
 
   return (

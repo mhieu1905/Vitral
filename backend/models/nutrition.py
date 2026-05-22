@@ -49,6 +49,13 @@ class WaterLogResponse(BaseModel):
         from_attributes = True
 
 
+# ── Hydration History Schemas ────────────────────────────────────────────────
+class HydrationHistoryDay(BaseModel):
+    day: str
+    value: float
+    isToday: bool
+
+
 # ── Dashboard Sub-schemas (S-37) ──────────────────────────────────────────────
 class MacroIntake(BaseModel):
     label: str  # Carbohydrates, Protein, Fats

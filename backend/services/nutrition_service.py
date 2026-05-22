@@ -1,6 +1,6 @@
 import httpx
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 from concurrent.futures import ThreadPoolExecutor
@@ -16,7 +16,8 @@ from backend.models.nutrition import (
     FoodLogOverviewResponse,
     FoodLogSectionData,
     FoodLogItemData,
-    MacroPieData
+    MacroPieData,
+    HydrationHistoryDay
 )
 
 SUPABASE_URL = (
@@ -127,6 +128,66 @@ def get_today_water_logs(user_id: str, user_token: str) -> List[dict]:
     return resp.json()
 
 
+def get_hydration_history(user_id: str, user_token: str, days: int = 7) -> List[HydrationHistoryDay]:
+    """Return hydration totals per day for the last N days (inclusive of today)."""
+    if days < 1:
+        days = 1
+    if days > 31:
+        days = 31
+
+    url = f"{SUPABASE_URL}/rest/v1/water_logs"
+    today = datetime.now(timezone.utc).date()
+    start_date = today - timedelta(days=days - 1)
+    start_str = f"{start_date.isoformat()}T00:00:00"
+
+    params = {
+        "user_id": f"eq.{user_id}",
+        "logged_at": f"gte.{start_str}",
+        "order": "logged_at.asc",
+        "select": "amount_ml,logged_at",
+    }
+
+    resp = httpx.get(url, headers=_headers(user_token), params=params, timeout=10.0)
+    if not resp.is_success:
+        print(f"[NUTRITION SERVICE] Fetch hydration history failed: {resp.text}")
+        return [
+            HydrationHistoryDay(
+                day=(start_date + timedelta(days=i)).strftime("%a"),
+                value=0,
+                isToday=(start_date + timedelta(days=i)) == today,
+            )
+            for i in range(days)
+        ]
+
+    logs = resp.json() or []
+
+    totals: Dict[str, float] = {}
+    for row in logs:
+        try:
+            logged_at_raw = row.get("logged_at")
+            if not logged_at_raw:
+                continue
+            dt = datetime.fromisoformat(str(logged_at_raw).replace("Z", "+00:00"))
+            day_key = dt.date().isoformat()
+            totals[day_key] = totals.get(day_key, 0.0) + float(row.get("amount_ml") or 0)
+        except Exception:
+            continue
+
+    out: List[HydrationHistoryDay] = []
+    for i in range(days):
+        d = start_date + timedelta(days=i)
+        key = d.isoformat()
+        out.append(
+            HydrationHistoryDay(
+                day=d.strftime("%a"),
+                value=totals.get(key, 0.0),
+                isToday=d == today,
+            )
+        )
+
+    return out
+
+
 # ── User Profile & Active Calories Helpers ────────────────────────────────────
 
 def get_user_nutrition_targets(user_id: str, user_token: str) -> dict:
@@ -223,7 +284,8 @@ def get_nutrition_dashboard(user_id: str, user_token: str) -> NutritionDashboard
     
     # 5. Water calculations
     water_intake_ml = sum(float(w["amount_ml"]) for w in water_logs)
-    water_intake_l = round(water_intake_ml / 1000.0, 1)
+    # Do not round aggressively here; FE converts liters->ml and expects exact increments like 250ml.
+    water_intake_l = round(water_intake_ml / 1000.0, 3)
     
     # 6. Macros Intake
     macros = [

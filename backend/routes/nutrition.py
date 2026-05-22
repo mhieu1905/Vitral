@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, Header
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from backend.models.nutrition import (
     FoodLogCreate,
     FoodLogResponse,
     WaterLogCreate,
     WaterLogResponse,
     NutritionDashboardResponse,
-    FoodLogOverviewResponse
+    FoodLogOverviewResponse,
+    HydrationHistoryDay
 )
 from backend.services.nutrition_service import (
     save_food_log,
@@ -14,7 +15,8 @@ from backend.services.nutrition_service import (
     get_nutrition_dashboard,
     get_food_log_overview,
     get_food_presets,
-    get_food_details
+    get_food_details,
+    get_hydration_history
 )
 from backend.database.connection import get_supabase_client
 
@@ -94,6 +96,22 @@ def nutrition_dashboard(
         return data
     except Exception as e:
         print(f"[NUTRITION ROUTE] nutrition_dashboard error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── GET /api/nutrition/water/history ─────────────────────────────────────────
+@router.get("/water/history", response_model=List[HydrationHistoryDay])
+def water_history(
+    days: int = 7,
+    authorization: Optional[str] = Header(None)
+):
+    user_id = get_current_user_id(authorization)
+    user_token = authorization.replace("Bearer ", "").strip()
+
+    try:
+        return get_hydration_history(user_id, user_token, days=days)
+    except Exception as e:
+        print(f"[NUTRITION ROUTE] water_history error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
