@@ -1,6 +1,6 @@
+import { API_BASE_URL } from '@/constants/api'
 import { supabase } from '@/utils/supabase'
 import { ImageSourcePropType } from 'react-native'
-import { API_BASE_URL } from '@/constants/api'
 
 const BASE_URL = API_BASE_URL
 
@@ -145,6 +145,24 @@ export async function getNutritionDashboard() {
     const errorText = await response.text()
     console.log('[NUTRITION SERVICE] getNutritionDashboard failed:', errorText)
     throw new Error(`Fetch nutrition dashboard failed: ${errorText}`)
+  }
+  return await response.json()
+}
+
+export type HydrationHistoryDay = {
+  day: string
+  value: number
+  isToday: boolean
+}
+
+export async function getHydrationHistory(days: number = 7): Promise<HydrationHistoryDay[]> {
+  const token = await getToken()
+  const response = await fetch(`${BASE_URL}/api/nutrition/water/history?days=${days}`, {
+    headers: { 'authorization': `Bearer ${token}` },
+  })
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Fetch hydration history failed: ${errorText}`)
   }
   return await response.json()
 }
