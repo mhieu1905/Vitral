@@ -1,16 +1,16 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
   Animated,
+  Dimensions,
   Easing,
   StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { supabase } from "../../utils/supabase";
 import { healthProfileService } from "../../services/healthProfileService";
+import { supabase } from "../../utils/supabase";
 
 const { width } = Dimensions.get("window");
 
@@ -59,7 +59,7 @@ function Bubble({ style, delay }: BubbleProps) {
             useNativeDriver: true,
           }),
         ]),
-      ])
+      ]),
     );
 
     pulse.start();
@@ -68,11 +68,7 @@ function Bubble({ style, delay }: BubbleProps) {
 
   return (
     <Animated.View
-      style={[
-        styles.bubble,
-        style,
-        { transform: [{ scale }], opacity },
-      ]}
+      style={[styles.bubble, style, { transform: [{ scale }], opacity }]}
     />
   );
 }
@@ -100,7 +96,7 @@ function LoadingDots() {
             useNativeDriver: true,
           }),
           Animated.delay(800),
-        ])
+        ]),
       );
 
     const a1 = animateDot(dot1, 0);
@@ -154,14 +150,24 @@ export default function LoadingScreen() {
 
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session) {
-          const profile = await healthProfileService.getUserHealthProfile(session.user.id);
-          if (profile) {
-            router.replace("/(tabs)/dashboard");
-          } else {
-            router.replace("/(onboarding)/goal-selection");
-          }
+          const profile = await healthProfileService
+            .getUserHealthProfile(session.user.id)
+            .catch((error) => {
+              // Don't trap users on loading if backend is unreachable on-device.
+              console.warn(
+                "[Onboarding] Failed to fetch profile, continuing onboarding:",
+                error,
+              );
+              return null;
+            });
+
+          router.replace(
+            profile ? "/(tabs)/dashboard" : "/(onboarding)/goal-selection",
+          );
         } else {
           router.replace("/(onboarding)/welcome");
         }
