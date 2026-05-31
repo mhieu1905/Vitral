@@ -6,6 +6,23 @@ import {
   WeightRecord,
 } from '../types/healthProfile';
 
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit | undefined,
+  timeoutMs: number
+): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...(options ?? {}),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 /**
  * Unified Health Profile API service.
  * Wraps FastAPI backend endpoints for profile and weight history management.
@@ -21,7 +38,7 @@ export const healthProfileService = {
     const url = `${API_BASE_URL}/onboarding/profile/${userId}`;
     console.log('[HealthProfile] GET:', url);
     try {
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, undefined, 8000);
       if (!response.ok) {
         if (response.status === 404) return null;
         throw new Error(`Failed to fetch health profile: ${response.status}`);
